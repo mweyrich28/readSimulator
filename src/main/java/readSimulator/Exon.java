@@ -3,22 +3,18 @@ package readSimulator;
 import java.util.Objects;
 
 public class Exon {
-    private final String id;
+    private int length;
     private final int genomicStart;
     private final int genomicEnd;
     private int relStart;
     private int relEnd;
     private int pos;
 
-    public Exon(String id, int start, int end, int pos) {
-        this.id = id;
+    public Exon(int start, int end, int pos, int length) {
+        this.length = length;
         this.genomicStart = start;
         this.genomicEnd = end;
         this.pos = pos;
-    }
-
-    public String getId() {
-        return id;
     }
 
     public int getGenomicStart() {
@@ -38,24 +34,8 @@ public class Exon {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;  // Check if they are the same object
-        if (o == null || getClass() != o.getClass()) return false;  // Check if the other object is a Cds instance
-
-        Exon cds = (Exon) o;
-        return genomicStart == cds.genomicStart &&
-                genomicEnd == cds.genomicEnd &&
-                Objects.equals(id, cds.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, genomicStart, genomicEnd);
-    }
-
-    @Override
     public String toString() {
-        return this.id + " " + this.genomicStart + ":" + this.genomicEnd + " " + "[" + this.pos +"]";
+        return this.genomicStart + ":" + this.genomicEnd + " " + "[" + this.pos +"] " + this.length;
     }
 
     public void setRelEnd(int relEnd) {

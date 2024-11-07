@@ -30,8 +30,7 @@ public class Main {
         String idxPath = "./inputFiles/Homo_sapiens.GRCh37.75.dna.toplevel.fa.fai";
         String od = "output";
         ReadSimulator r = new ReadSimulator(length , frlength , SD , mutRate , gtfPath , readCountsPath , fastaPath , idxPath , od);
-        // Genome genome = new Genome(idxPath, fastaPath);
-        // String seq = genome.getGSE().getSequence("15",20209093, 20209115, false );
-
+        //Genome genome = new Genome(idxPath, fastaPath);
+        //String seq = genome.getGSE().getSequence("15",20209093, 20209115, true);
     }
 }

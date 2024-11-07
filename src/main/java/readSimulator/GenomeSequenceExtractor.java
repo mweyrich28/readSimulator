@@ -239,39 +239,4 @@ public class GenomeSequenceExtractor {
 
         return result;
     }
-    // Method to get a sequence from the FASTA file
-    public String getSequenceaa(String chr, int start, int end, boolean revStrand) throws IOException {
-        // Check if the chromosome exists in the index map
-        if (!this.fastaIdx.containsKey(chr)) {
-           return null;
-        }
-
-        // Get the file offset for the start of the chromosome
-        long chrOffset = fastaIdx.get(chr).get(1);
-
-        // Calculate the offset to seek to within the chromosome
-        long seekPosition = chrOffset + start;
-
-        // Seek to the start position
-        fasta.seek(seekPosition);
-
-        // Read the sequence of the specified length
-        int length = end - start + 1;
-        byte[] buffer = new byte[length];
-        fasta.read(buffer, 0, length);
-
-        // Convert the buffer to a String and return it
-        if (revStrand) {
-           return GenomeUtils.revComplement(new String(buffer));
-        } else {
-            return new String(buffer);
-        }
-    }
-
-    // Close method to release file resources
-    public void close() throws IOException {
-        if (fasta != null) {
-            fasta.close();
-        }
-    }
 }

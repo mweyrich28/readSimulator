@@ -25,8 +25,8 @@ public class Transcript {
         this.rwReads = new ArrayList<>();
     }
 
-    public void addExon(String exonid, int start, int end, int pos) {
-        Exon cds = new Exon(exonid, start, end, pos);
+    public void addExon(int start, int end, int pos) {
+        Exon cds = new Exon(start, end, pos, end-start + 1);
         exonList.add(cds);
     }
 

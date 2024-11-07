@@ -64,7 +64,7 @@ public class Genome {
 
         // sanity check vars
         Gene lastGene = null;
-        int cdsCounter = 0;
+        int exonCounter = 0;
 
         for (int i = 0; i < lines.size() - 1; i++) {
             String currLine = lines.get(i);
@@ -108,30 +108,21 @@ public class Genome {
                 lastGene.addTranscript(transcript);
 
                 // reset
-                cdsCounter = 0;
+                exonCounter = 0;
 
             }
             // if we don't have "transcript" in mainComp[2], we are either in CDS
             // or exon of last transcript
             else {
-                // add exon or cds to last transcript
-                String cdsIdKey = "protein_id";
-                String cdsId = FileUtils.parseGTFAttributes(attributeEntries, cdsIdKey);
-                if (cdsId == null) {
-                    // fall back to ccds id
-                    cdsId = FileUtils.parseGTFAttributes(attributeEntries, "ccdsid");
-                }
-                if (cdsId == null) {
-                    // fall back to empty id
-                    cdsId = "NaN";
-                }
+                // add exon to last transcript
+                int start = Integer.parseInt(mainComponents[3]);
+                int end = Integer.parseInt(mainComponents[4]);
                 lastGene.getLastTranscript().addExon(
-                        cdsId,
-                        Integer.parseInt(mainComponents[3]),
-                        Integer.parseInt(mainComponents[4]),
-                        cdsCounter
+                        start,
+                        end,
+                        exonCounter
                 );
-                cdsCounter++;
+                exonCounter++;
             }
         }
     }
