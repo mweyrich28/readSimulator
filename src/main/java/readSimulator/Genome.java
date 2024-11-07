@@ -53,11 +53,9 @@ public class Genome {
                     transcriptSeq.append(gene.getSeq(), relStart, relEnd);
                 }
                 if (gene.getStrand() == '-') {
-                    String t = GenomeUtils.revComplement(transcriptSeq.toString());
-                    transcript.setTranscriptSeq(t);
+                    transcript.setTranscriptSeq(GenomeUtils.revComplement(transcriptSeq.toString()));
                 } else {
-                    String d = transcriptSeq.toString();
-                    transcript.setTranscriptSeq(d);
+                    transcript.setTranscriptSeq(transcriptSeq.toString());
                 }
             }
         }

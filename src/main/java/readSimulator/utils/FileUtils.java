@@ -43,6 +43,37 @@ public class FileUtils {
         return fileLines;
     }
 
+    public static boolean filterLine(String line, String key) throws IOException {
+        StringBuilder relevantCol = new StringBuilder();
+
+        // skip comments
+        if (line.charAt(0) == '#') {
+            return false;
+        }
+
+        // save memory by selecting correct col based on tabCount
+        int tabCount = 0;
+        boolean seenSpace = false;
+        relevantCol.setLength(0); // reset sb
+        for (int i = 0; i < line.length(); i++) {
+            if (line.charAt(i) == '\t') {
+                tabCount++;
+            }
+            else if (tabCount == 8 && seenSpace && line.charAt(i) != ';') {
+                relevantCol.append(line.charAt(i));
+                continue;
+            }
+
+            if ("exon".contentEquals(relevantCol) || "transcript".contentEquals(relevantCol) || "gene".contentEquals(relevantCol)) {
+                return true;
+            }
+
+            if (tabCount == 3) {
+                break;
+            }
+        }
+        return false;
+    }
     public static String parseGTFAttributes(String[] attributeEntries, String attributeName) {
         for (int i = 0; i < attributeEntries.length; i++) {
             String trimmedEntry = attributeEntries[i].trim();

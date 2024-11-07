@@ -6,18 +6,10 @@ public class GenomeUtils {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < dnaSeq.length(); i++) {
             switch (dnaSeq.charAt(i)) {
-                case 'A':
-                    sb.append('T');
-                    break;
-                case 'T':
-                    sb.append('A');
-                    break;
-                case 'G':
-                    sb.append('C');
-                    break;
-                case 'C':
-                    sb.append('G');
-                    break;
+                case 'A' -> sb.append('T');
+                case 'T' -> sb.append('A');
+                case 'G' -> sb.append('C');
+                case 'C' -> sb.append('G');
             }
         }
         return sb.reverse().toString();
