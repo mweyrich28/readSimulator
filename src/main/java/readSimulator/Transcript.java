@@ -6,52 +6,47 @@ import java.util.HashMap;
 
 public class Transcript {
     private final String transcriptId;
-    private final HashMap<Integer, CodingDnaSequence> cdsEndIndices;
-    private final HashMap<Integer, CodingDnaSequence> cdsStartIndices;
-    private final HashMap<String , CodingDnaSequence> cdsIdMap;
-    private final ArrayList<CodingDnaSequence> cdsList;
+    private final int start;
+    private final int stop;
+    private final ArrayList<Exon> exonList;
     private final String transcriptType;
 
-    public Transcript(String transcriptId, String transcriptType) {
+    private final ArrayList<String> fwReads;
+    private final ArrayList<String> rwReads;
+    private String transcriptSeq; // patched together using its exons
+
+    public Transcript(String transcriptId, String transcriptType, int start, int stop) {
         this.transcriptId = transcriptId;
         this.transcriptType = transcriptType;
-        this.cdsEndIndices = new HashMap<>();
-        this.cdsStartIndices = new HashMap<>();
-        this.cdsIdMap = new HashMap<>();
-        this.cdsList = new ArrayList<>();
+        this.start = start;
+        this.stop = stop;
+        this.exonList = new ArrayList<>();
+        this.fwReads = new ArrayList<>();
+        this.rwReads = new ArrayList<>();
     }
 
-    public void addCds(String cdsid, int start, int end, int pos) {
-        CodingDnaSequence cds = new CodingDnaSequence(cdsid, start, end, pos);
-
-        // easily check if transcript has a cds ending at I_s / starting at I_e
-        cdsEndIndices.put(end, cds);
-        cdsStartIndices.put(start, cds);
-        cdsIdMap.put(cds.getId(), cds);
-        cdsList.add(cds);
+    public void addExon(String exonid, int start, int end, int pos) {
+        Exon cds = new Exon(exonid, start, end, pos);
+        exonList.add(cds);
     }
 
     public String getTranscriptId() {
         return transcriptId;
     }
 
-    public ArrayList<CodingDnaSequence> getCdsList() {
-        return this.cdsList;
-    }
-
-    public HashMap<Integer, CodingDnaSequence> getCdsEndIndices() {
-        return cdsEndIndices;
-    }
-
-    public HashMap<Integer, CodingDnaSequence> getCdsStartIndices() {
-        return cdsStartIndices;
+    public ArrayList<Exon> getExonList() {
+        return this.exonList;
     }
 
     public void reversCdsList() {
-        Collections.reverse(this.cdsList);
+        Collections.reverse(this.exonList);
     }
 
-    public HashMap<String, CodingDnaSequence> getCdsIdMap() {
-        return cdsIdMap;
+    public void setTranscriptSeq(String transcriptSeq) {
+        this.transcriptSeq = transcriptSeq;
+    }
+
+    public String getTranscriptSeq() {
+        return this.transcriptSeq;
     }
 }

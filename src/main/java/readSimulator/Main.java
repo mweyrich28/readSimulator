@@ -1,15 +1,6 @@
 package readSimulator;
 
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import net.sourceforge.argparse4j.inf.Namespace;
-
-import org.apache.commons.math3.distribution.NormalDistribution;
-import readSimulator.utils.LineFilter;
-
 import java.io.IOException;
-import java.util.ArrayList;
 
 public class Main {
     public static void main(String[] args) throws IOException {
@@ -27,5 +18,20 @@ public class Main {
         // catch (ArgumentParserException e) {
         //     parser.printHelp();
         // }
+        int length = 75; // read length
+        int frlength = 20;
+        int SD = 80;
+        double mutRate = 1.0;
+        // String gtfPath = "./inputFiles/test.GRCh37.75.gtf";
+        // String readCountsPath = "./inputFiles/simul.readcons";
+        String gtfPath = "./inputFiles/Homo_sapiens.GRCh37.75.gtf";
+        String readCountsPath = "inputFiles/readcounts.simulation";
+        String fastaPath = "./inputFiles/Homo_sapiens.GRCh37.75.dna.toplevel.fa";
+        String idxPath = "./inputFiles/Homo_sapiens.GRCh37.75.dna.toplevel.fa.fai";
+        String od = "output";
+        ReadSimulator r = new ReadSimulator(length , frlength , SD , mutRate , gtfPath , readCountsPath , fastaPath , idxPath , od);
+        // Genome genome = new Genome(idxPath, fastaPath);
+        // String seq = genome.getGSE().getSequence("15",20209093, 20209115, false );
+
     }
 }

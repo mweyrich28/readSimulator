@@ -1,105 +1,73 @@
 package readSimulator;
 
-import org.src.utils.FileUtils;
+import readSimulator.utils.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Genome {
-    private String name;
-    private String version;
-    private ArrayList<Gene> proteinCodingGenes;
+    private final HashMap<String, Gene> genes;
+    private GenomeSequenceExtractor GSE;
 
     public Genome() {
-        this.proteinCodingGenes = new ArrayList<>();
+        this.genes = new HashMap<>();
     }
 
-    public Genome(String name, String version) {
-        this.name = name;
-        this.version = version;
-        this.proteinCodingGenes = new ArrayList<>();
+    public Genome(String fastaIdx, String fasta) throws IOException {
+        this.genes = new HashMap<>();
+        this.GSE = new GenomeSequenceExtractor(fastaIdx, fasta);
+
     }
 
-    public String getName() {
-        return name;
+    public HashMap<String, Gene> getGenes() {
+        return genes;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public void initTargetGeneSeqs(HashMap<String , HashMap<String, Integer>> readCounts) throws IOException {
+        for (String geneKey : readCounts.keySet()) {
+            Gene gene = this.genes.get(geneKey);
+            String chr = gene.getChr();
+            int start = gene.getStart();
+            int end = gene.getEnd();
+            String seq = GSE.getSequence(chr, start, end, gene.getStrand() == '-');
+            gene.setSequence(seq);
 
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
-    }
-
-    public ArrayList<Gene> getProteinCodingGenes() {
-        return proteinCodingGenes;
-    }
-
-    public ArrayList<String> generateESSE() {
-        ArrayList<String> events = new ArrayList<>();
-        StringBuilder sb = new StringBuilder();
-        sb.append("id\t").append("symbol\t").append("chr\t").append("strand\t").append("nprots\t").append("ntrans\t").append("SV\t").append("WT\t").append("SV_prots\t").append("WT_prots\t").append("min_skipped_exon\t").append("max_skipped_exon\t").append("min_skipped_bases\t").append("max_skipped_bases");
-
-        // add colNames
-        events.add(sb.toString());
-
-        for (Gene gene : proteinCodingGenes) {
-            if (gene.getStrand() == '-') {
-               gene.invertTranscripts();
-            }
-            gene.generateIntrons();
-            events.addAll(gene.getEvents());
-        }
-
-        return events;
-    }
-
-    // TODO: improve for memory
-    public String parseAttributes(String[] attributeEntries, String attributeName) {
-        for (int i = 0; i < attributeEntries.length; i++) {
-            String trimmedEntry = attributeEntries[i].trim();
-
-            int posSpace = trimmedEntry.indexOf(' ');
-            String attributeKey = trimmedEntry.substring(0, posSpace);
-
-            String attributeVal;
-
-            if (trimmedEntry.endsWith("\"")) {
-                attributeVal = trimmedEntry.substring(posSpace + 2, trimmedEntry.length() - 1);
-            }
-            // there are entries like exon_number, which are not encapsulated in quotes
-            else {
-                attributeVal = trimmedEntry.substring(posSpace + 1, trimmedEntry.length() - 1);
-            }
-
-            if (attributeKey.equals(attributeName)) {
-                return attributeVal;
+            // for all transcripts of gene generate exons and trans seq
+            for (String transcriptKey : readCounts.get(geneKey).keySet()) {
+                Transcript transcript = gene.getTranscriptMap().get(transcriptKey);
+                StringBuilder transcriptSeq = new StringBuilder();
+                for (int i = 0; i < transcript.getExonList().size(); i++) {
+                    Exon exon = null;
+                    if (gene.getStrand() == '-') {
+                        exon = transcript.getExonList().get(transcript.getExonList().size() - i - 1);
+                    } else {
+                        exon = transcript.getExonList().get(i);
+                    }
+                    int relStart = exon.getGenomicStart() - gene.getStart();
+                    int relEnd = exon.getGenomicEnd() - gene.getStart() + 1;
+                    exon.setRelStart(relStart);
+                    exon.setRelEnd(relEnd);
+                    transcriptSeq.append(gene.getSeq(), relStart, relEnd);
+                }
+                transcript.setTranscriptSeq(transcriptSeq.toString());
             }
         }
-        return null;
     }
 
-    public void readGTFCDS(String pathToGtf) throws IOException {
+
+
+    public void readGTF(String pathToGtf) throws IOException {
         // get lines of gtf
-        ArrayList<String> lines = FileUtils.readExonLines(new File(pathToGtf));
+        ArrayList<String> lines = FileUtils.readFilterLines(new File(pathToGtf));
 
         // sanity check vars
-        Gene lastGeneId = null;
-        String lastTranscriptId = null;
+        Gene lastGene = null;
         int cdsCounter = 0;
 
         for (int i = 0; i < lines.size() - 1; i++) {
             String currLine = lines.get(i);
-            // skip potential comments
-            if (currLine.startsWith("#")) {
-                continue;
-            }
 
             // extract main components (line split by \t)
             String[] mainComponents = currLine.split("\t");
@@ -107,89 +75,68 @@ public class Genome {
             String[] attributeEntries = mainComponents[mainComponents.length - 1].split(";");
 
             // get newGeneId of current line
-            String newGeneId = parseAttributes(attributeEntries, "gene_id");
+            String newGeneId = FileUtils.parseGTFAttributes(attributeEntries, "gene_id");
 
             // check if we hit a new gene
-            if (lastGeneId == null || !newGeneId.equals(lastGeneId.getGeneId())) {
+            if (mainComponents[2].equals("gene")) {
                 // update gene and continue with next gtf line
                 int geneStart = Integer.parseInt(mainComponents[3]);
                 int geneEnd = Integer.parseInt(mainComponents[4]);
-                String geneName = parseAttributes(attributeEntries, "gene_name");
+                String geneName = FileUtils.parseGTFAttributes(attributeEntries, "gene_name");
                 String chr = mainComponents[0];
                 char strand = mainComponents[6].charAt(0);
-                lastGeneId = new Gene(newGeneId, geneStart, geneEnd, geneName, chr, strand);
+                lastGene = new Gene(newGeneId, geneStart, geneEnd, geneName, chr, strand);
+                genes.put(lastGene.getGeneId(), lastGene);
 
                 continue;
             }
 
-            // only add cds to current transcript
-            String transcriptId = parseAttributes(attributeEntries,"transcript_id");
-            if (mainComponents[2].equals("CDS")) {
+
+            // did we hit a new transcript
+            if (mainComponents[2].equals("transcript")) {
+
+                // only add cds to current transcript
+                String transcriptId = FileUtils.parseGTFAttributes(attributeEntries, "transcript_id");
+
+                // add gene to genome
+                genes.put(lastGene.getGeneId(), lastGene);
+
+                // add new transcript to current gene
+                int transcriptStart = Integer.parseInt(mainComponents[3]);
+                int transcriptStop = Integer.parseInt(mainComponents[4]);
+                Transcript transcript = new Transcript(transcriptId, mainComponents[2], transcriptStart, transcriptStop);
+                lastGene.addTranscript(transcript);
+
+                // reset
+                cdsCounter = 0;
+
+            }
+            // if we don't have "transcript" in mainComp[2], we are either in CDS
+            // or exon of last transcript
+            else {
+                // add exon or cds to last transcript
                 String cdsIdKey = "protein_id";
-                String cdsId = parseAttributes(attributeEntries, cdsIdKey);
+                String cdsId = FileUtils.parseGTFAttributes(attributeEntries, cdsIdKey);
                 if (cdsId == null) {
                     // fall back to ccds id
-                    cdsId = parseAttributes(attributeEntries, "ccdsid");
+                    cdsId = FileUtils.parseGTFAttributes(attributeEntries, "ccdsid");
                 }
                 if (cdsId == null) {
                     // fall back to empty id
                     cdsId = "NaN";
                 }
-                // check if we are in a new transcript
-                if(lastGeneId.getTranscripts().isEmpty()) { // if gene transcripts are empty, just add new transcript
-
-                    // add gene to genome (based on if it is p coding or not)
-                    this.proteinCodingGenes.add(lastGeneId);
-
-                    cdsCounter = 0; // reset cdsCounter
-
-                    // add new transcript to current gene
-                    Transcript transcript = new Transcript(transcriptId, mainComponents[2]);
-                    lastGeneId.addTranscript(transcript);
-
-                    // add cds to current transcript
-                    lastGeneId.getLastTranscript().addCds(
-                            cdsId,
-                            Integer.parseInt(mainComponents[3]),
-                            Integer.parseInt(mainComponents[4]),
-                            cdsCounter
-                    );
-                    cdsCounter++;
-                }
-                // else check if we are still in the same transcript
-                else if (transcriptId.equals(lastGeneId.getLastTranscript().getTranscriptId())) {
-                    lastGeneId.getLastTranscript().addCds(
-                            cdsId,
-                            Integer.parseInt(mainComponents[3]),
-                            Integer.parseInt(mainComponents[4]),
-                            cdsCounter
-                    );
-                    cdsCounter++;
-                }
-                // else we add a new transcript
-                else {
-                    cdsCounter = 0; // reset cdsCounter
-                    // add new transcript to current gene
-                    lastGeneId.addTranscript(new Transcript(transcriptId, mainComponents[2]));
-                    // add cds to current transcript
-                    lastGeneId.getLastTranscript().addCds(
-                            cdsId,
-                            Integer.parseInt(mainComponents[3]),
-                            Integer.parseInt(mainComponents[4]),
-                            cdsCounter
-                    );
-                    cdsCounter++;
-                }
-            }
-
-            // here we increment the ntrans count, we currently don't need to save exons.
-            // by only having a count, we save space
-            if (mainComponents[2].equals("CDS") || mainComponents[2].equals("exon")) {
-                if (!(transcriptId.equals(lastTranscriptId))) {
-                    lastGeneId.incTrans();
-                    lastTranscriptId = transcriptId;
-                }
+                lastGene.getLastTranscript().addExon(
+                        cdsId,
+                        Integer.parseInt(mainComponents[3]),
+                        Integer.parseInt(mainComponents[4]),
+                        cdsCounter
+                );
+                cdsCounter++;
             }
         }
+    }
+
+    public GenomeSequenceExtractor getGSE() {
+        return GSE;
     }
 }
