@@ -177,7 +177,7 @@ public class GenomeSequenceExtractor {
         return result;
     }
 
-    public String getSequence(String chr, int start, int stop, boolean revStrand) throws IOException {
+    public String getSequence(String chr, int start, int stop) throws IOException {
         // skip non existent chromosomes
         if (!fastaIdx.containsKey(chr)) {
             return null;
@@ -231,12 +231,6 @@ public class GenomeSequenceExtractor {
             }
         }
 
-        String result = sequence.toString().toUpperCase();
-
-        if (revStrand) {
-            result = GenomeUtils.revComplement(result);
-        }
-
-        return result;
+        return sequence.toString().toUpperCase();
     }
 }

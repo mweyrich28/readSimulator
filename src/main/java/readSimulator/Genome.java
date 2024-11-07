@@ -1,6 +1,7 @@
 package readSimulator;
 
 import readSimulator.utils.FileUtils;
+import readSimulator.utils.GenomeUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,7 +32,7 @@ public class Genome {
             String chr = gene.getChr();
             int start = gene.getStart();
             int end = gene.getEnd();
-            String seq = GSE.getSequence(chr, start, end, gene.getStrand() == '-');
+            String seq = GSE.getSequence(chr, start, end);
             gene.setSequence(seq);
 
             // for all transcripts of gene generate exons and trans seq
@@ -51,7 +52,13 @@ public class Genome {
                     exon.setRelEnd(relEnd);
                     transcriptSeq.append(gene.getSeq(), relStart, relEnd);
                 }
-                transcript.setTranscriptSeq(transcriptSeq.toString());
+                if (gene.getStrand() == '-') {
+                    String t = GenomeUtils.revComplement(transcriptSeq.toString());
+                    transcript.setTranscriptSeq(t);
+                } else {
+                    String d = transcriptSeq.toString();
+                    transcript.setTranscriptSeq(d);
+                }
             }
         }
     }

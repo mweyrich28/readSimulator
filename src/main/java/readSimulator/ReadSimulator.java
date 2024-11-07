@@ -92,12 +92,12 @@ public class ReadSimulator {
                     // get fw and rw reads
                     String fwSeqRead = fragment.substring(0, length);
                     String rwSeqRead = GenomeUtils.revComplement(fragment.substring(fragment.length() - length, fragment.length()));
-                    // System.out.println(transcriptKey);
-                    // System.out.println(fwSeqRead);
-                    // System.out.println(rwSeqRead);
-                    // System.out.println(transcriptSeq);
-                    // System.out.println(fragment);
-                    // System.out.println();
+                    System.out.println(transcriptKey);
+                    System.out.println(fwSeqRead);
+                    System.out.println(rwSeqRead);
+                    System.out.println(transcriptSeq);
+                    System.out.println(fragment);
+                    System.out.println();
                 }
             }
         }
