@@ -2,6 +2,7 @@ package readSimulator.utils;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class FileUtils {
     public static ArrayList<String> readFilterLines(File r) throws IOException {
@@ -43,7 +44,7 @@ public class FileUtils {
         return fileLines;
     }
 
-    public static boolean filterLine(String line, String key) throws IOException {
+    public static boolean filterLine(String line, HashMap<String, HashMap<String, Integer>> readCounts) throws IOException {
         StringBuilder relevantCol = new StringBuilder();
 
         // skip comments
@@ -54,22 +55,18 @@ public class FileUtils {
         // save memory by selecting correct col based on tabCount
         int tabCount = 0;
         boolean seenSpace = false;
-        relevantCol.setLength(0); // reset sb
         for (int i = 0; i < line.length(); i++) {
             if (line.charAt(i) == '\t') {
                 tabCount++;
             }
-            else if (tabCount == 8 && seenSpace && line.charAt(i) != ';') {
+            else if (line.charAt(i) == ' ') {
+                seenSpace = true;
+            }
+            else if (tabCount == 8 && seenSpace && line.charAt(i) != '\"') {
+                if (line.charAt(i) == ';') {
+                    return readCounts.containsKey(relevantCol.toString());
+                }
                 relevantCol.append(line.charAt(i));
-                continue;
-            }
-
-            if ("exon".contentEquals(relevantCol) || "transcript".contentEquals(relevantCol) || "gene".contentEquals(relevantCol)) {
-                return true;
-            }
-
-            if (tabCount == 3) {
-                break;
             }
         }
         return false;

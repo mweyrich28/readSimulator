@@ -6,9 +6,7 @@ import readSimulator.utils.GenomeUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Random;
+import java.util.*;
 
 public class ReadSimulator {
 
@@ -30,9 +28,10 @@ public class ReadSimulator {
 
         this.initReadCounts(readCountsPath);
         this.genome = new Genome(idxPath, fastaPath);
-        this.genome.readGTF(gtfPath);
+        this.genome.readGTF(gtfPath, readCounts);
         this.genome.initTargetGeneSeqs(readCounts);
         this.generateReads(length, frlength, SD, mutRate);
+        System.out.println();
     }
 
     public void initReadCounts(String readCountsPath) throws IOException {
@@ -63,7 +62,6 @@ public class ReadSimulator {
         for (String geneKey : readCounts.keySet()) {
 
             for (String transcriptKey : readCounts.get(geneKey).keySet()) {
-                System.out.println("Generating Reads in " + geneKey + " " + transcriptKey + " " + readId);
 
                 Transcript transcript = this.genome.getGenes().get(geneKey).getTranscriptMap().get(transcriptKey);
                 String transcriptSeq = transcript.getTranscriptSeq();
@@ -82,11 +80,11 @@ public class ReadSimulator {
                     int randomStartPos = random.nextInt(maxStartPos + 1);
 
                     // get fragment
-                    String fragment = transcriptSeq.substring(randomStartPos, randomStartPos + fragmentLength);
+                    // String fragment = transcriptSeq.substring(randomStartPos, randomStartPos + fragmentLength);
 
                     // get fw and rw reads
-                    String fwSeqRead = fragment.substring(0, length);
-                    String rwSeqRead = GenomeUtils.revComplement(fragment.substring(fragment.length() - length, fragment.length()));
+                    String fwSeqRead = transcriptSeq.substring(randomStartPos, randomStartPos + length);
+                    String rwSeqRead = GenomeUtils.revComplement(transcriptSeq.substring(randomStartPos + fragmentLength - length, randomStartPos + fragmentLength));
                     int fwStart = randomStartPos;
                     int fwEnd = randomStartPos + length;
                     int rwStart = randomStartPos + fragmentLength - length;
@@ -99,9 +97,11 @@ public class ReadSimulator {
 
                     // System.out.println(transcriptKey);
                     // System.out.println(fwSeqRead);
+                    // System.out.println(fwRead.getReadSeq());
                     // System.out.println(rwSeqRead);
+                    // System.out.println(rwRead.getReadSeq());
                     // System.out.println(transcriptSeq);
-                    // System.out.println(fragment);
+                    // System.out.println(transcriptSeq.substring(randomStartPos, randomStartPos + fragmentLength));
                     // System.out.println();
 
                     readId++;
@@ -113,26 +113,31 @@ public class ReadSimulator {
     }
 
     public void mutateRead(Read read, double mutRate) {
-        StringBuilder mutatedSeq = new StringBuilder();
-        String orgSeq = read.getReadSeq();
+        char[] seqArr = read.getReadSeq();
+        int seqLength = seqArr.length;
 
-        for (int i = 0; i < orgSeq.length(); i++) {
-            char originalNucleotide = orgSeq.charAt(i);
-            char newNucleotide = originalNucleotide;
+        // Calculate the expected number of mutations
+        int numMutations = (int) Math.round(mutRate * seqLength);
 
-            // Check if a mutation should occur
-            if (random.nextDouble() < mutRate) {
-                // Choose a new nucleotide that is not the same as the original
-                do {
-                    newNucleotide = NUCLEOTIDES[random.nextInt(NUCLEOTIDES.length)];
-                } while (newNucleotide == originalNucleotide);
-            }
-
-            // Append the chosen nucleotide to mutatedSeq
-            mutatedSeq.append(newNucleotide);
+        // Randomly select unique positions to mutate
+        HashSet<Integer> mutationPositions = new HashSet<>();
+        while (mutationPositions.size() < numMutations) {
+            mutationPositions.add(random.nextInt(seqLength));
         }
 
-        // Set the mutated sequence in the Read object
-        read.setReadSeq(mutatedSeq.toString());
+        // Perform mutations at the selected positions
+        for (int pos : mutationPositions) {
+            char originalNucleotide = seqArr[pos];
+            char newNucleotide;
+
+            // Choose a new nucleotide that is different from the original
+            do {
+                newNucleotide = NUCLEOTIDES[random.nextInt(NUCLEOTIDES.length)];
+            } while (newNucleotide == originalNucleotide);
+
+            seqArr[pos] = newNucleotide; // Mutate the character at the position
+            read.addMutPos(pos);
+        }
     }
+
 }

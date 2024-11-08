@@ -21,7 +21,7 @@ public class Main {
         int length = 75; // read length
         int frlength = 20;
         int SD = 80;
-        double mutRate = 1.0;
+        double mutRate = 1.0 / 100; // 0.01
         // String gtfPath = "./inputFiles/test.GRCh37.75.gtf";
         // String readCountsPath = "./inputFiles/simul.readcons";
         String gtfPath = "./inputFiles/Homo_sapiens.GRCh37.75.gtf";

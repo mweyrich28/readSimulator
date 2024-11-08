@@ -3,9 +3,9 @@ package readSimulator;
 import readSimulator.utils.FileUtils;
 import readSimulator.utils.GenomeUtils;
 
-import java.io.File;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Genome {
@@ -63,19 +63,24 @@ public class Genome {
 
 
 
-    public void readGTF(String pathToGtf) throws IOException {
+    public void readGTF(String pathToGtf, HashMap<String, HashMap<String, Integer>> readCounts) throws IOException {
         // get lines of gtf
-        ArrayList<String> lines = FileUtils.readFilterLines(new File(pathToGtf));
 
         // sanity check vars
         Gene lastGene = null;
         int exonCounter = 0;
 
-        for (int i = 0; i < lines.size() - 1; i++) {
-            String currLine = lines.get(i);
+        BufferedReader buff = new BufferedReader(new FileReader(pathToGtf));
+        String line;
+
+        while((line = buff.readLine()) != null) {
+            // skipp all lines that don t contain a relevant gene id
+            if (!FileUtils.filterLine(line, readCounts)) {
+               continue;
+            }
 
             // extract main components (line split by \t)
-            String[] mainComponents = currLine.split("\t");
+            String[] mainComponents = line.split("\t");
             // split attributes again at ";"
             String[] attributeEntries = mainComponents[mainComponents.length - 1].split(";");
 
