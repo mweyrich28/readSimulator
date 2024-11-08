@@ -6,6 +6,7 @@ import readSimulator.utils.GenomeUtils;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Genome {
@@ -39,6 +40,7 @@ public class Genome {
             for (String transcriptKey : readCounts.get(geneKey).keySet()) {
                 Transcript transcript = gene.getTranscriptMap().get(transcriptKey);
                 StringBuilder transcriptSeq = new StringBuilder();
+
                 for (int i = 0; i < transcript.getExonList().size(); i++) {
                     Exon exon = null;
                     if (gene.getStrand() == '-') {
@@ -46,10 +48,10 @@ public class Genome {
                     } else {
                         exon = transcript.getExonList().get(i);
                     }
+
                     int relStart = exon.getGenomicStart() - gene.getStart();
                     int relEnd = exon.getGenomicEnd() - gene.getStart() + 1;
-                    exon.setRelStart(relStart);
-                    exon.setRelEnd(relEnd);
+
                     transcriptSeq.append(gene.getSeq(), relStart, relEnd);
                 }
                 if (gene.getStrand() == '-') {

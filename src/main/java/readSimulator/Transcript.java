@@ -11,8 +11,6 @@ public class Transcript {
     private final ArrayList<Exon> exonList;
     private final String transcriptType;
 
-    private final ArrayList<Read> fwReads;
-    private final ArrayList<Read> rwReads;
     private String transcriptSeq; // patched together using its exons
 
     public Transcript(String transcriptId, String transcriptType, int start, int stop) {
@@ -21,13 +19,11 @@ public class Transcript {
         this.start = start;
         this.stop = stop;
         this.exonList = new ArrayList<>();
-        this.fwReads = new ArrayList<>();
-        this.rwReads = new ArrayList<>();
     }
 
     public void addExon(int start, int end, int pos) {
-        Exon cds = new Exon(start, end, pos, end-start + 1);
-        exonList.add(cds);
+        Exon exon = new Exon(start, end, pos, end-start + 1);
+        exonList.add(exon);
     }
 
     public String getTranscriptId() {
@@ -48,18 +44,5 @@ public class Transcript {
 
     public String getTranscriptSeq() {
         return this.transcriptSeq;
-    }
-
-    public ArrayList<Read> getFwReads() {
-        return fwReads;
-    }
-
-    public ArrayList<Read> getRwReads() {
-        return rwReads;
-    }
-
-    public void addReads(Read fw, Read rw) {
-        this.fwReads.add(fw);
-        this.rwReads.add(rw);
     }
 }

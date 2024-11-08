@@ -6,8 +6,6 @@ public class Exon {
     private int length;
     private final int genomicStart;
     private final int genomicEnd;
-    private int relStart;
-    private int relEnd;
     private int pos;
 
     public Exon(int start, int end, int pos, int length) {
@@ -38,19 +36,7 @@ public class Exon {
         return this.genomicStart + ":" + this.genomicEnd + " " + "[" + this.pos +"] " + this.length;
     }
 
-    public void setRelEnd(int relEnd) {
-        this.relEnd = relEnd;
-    }
-
-    public int getRelStart() {
-        return relStart;
-    }
-
-    public int getRelEnd() {
-        return relEnd;
-    }
-
-    public void setRelStart(int relStart) {
-        this.relStart = relStart;
+    public int getLength() {
+        return length;
     }
 }
