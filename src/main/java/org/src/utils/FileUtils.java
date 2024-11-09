@@ -1,4 +1,4 @@
-package readSimulator.utils;
+package org.src.utils;
 
 import java.io.*;
 import java.util.ArrayList;

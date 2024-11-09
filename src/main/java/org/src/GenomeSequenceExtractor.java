@@ -1,10 +1,8 @@
-package readSimulator;
+package org.src;
 
-import readSimulator.utils.FileUtils;
-import readSimulator.utils.GenomeUtils;
+import org.src.utils.FileUtils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;

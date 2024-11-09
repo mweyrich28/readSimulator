@@ -1,4 +1,4 @@
-package readSimulator.utils;
+package org.src.utils;
 
 public class GenomeUtils {
 

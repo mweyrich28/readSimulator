@@ -1,8 +1,7 @@
-package readSimulator;
+package org.src;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 
 public class Gene {
     private final String geneId;

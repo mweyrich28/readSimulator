@@ -1,12 +1,11 @@
-package readSimulator;
+package org.src;
 
-import readSimulator.utils.FileUtils;
-import readSimulator.utils.GenomeUtils;
+import org.src.utils.FileUtils;
+import org.src.utils.GenomeUtils;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Genome {
@@ -124,8 +123,8 @@ public class Genome {
 
             }
             // if we don't have "transcript" in mainComp[2], we are either in CDS
-            // or exon of last transcript
-            else {
+            // or exon of last transcript → we only need transcripts (last edit)
+            else if (mainComponents[2].equals("exon")) {
                 // add exon to last transcript
                 int start = Integer.parseInt(mainComponents[3]);
                 int end = Integer.parseInt(mainComponents[4]);
