@@ -90,7 +90,6 @@ public class ReadSimulator {
                 String transcriptSeq = transcript.getTranscriptSeq();
                 int sampleAmount = readCounts.get(geneKey).get(transcriptKey);
 
-
                 for (int i = 0; i < sampleAmount; i++) {
                     int fragmentLength;
                     do {
@@ -127,7 +126,8 @@ public class ReadSimulator {
                             .append(rwStart).append("-").append(rwEnd + 1).append("\t") // + 1 because 1 based
                             .append(String.join("|", fwRegVec)).append("\t")
                             .append(String.join("|", rwRegVec)).append("\t")
-                            .append(String.join(",", fwRead.getMutPos()));
+                            .append(String.join(",", fwRead.getMutPos())).append("\t")
+                            .append(String.join(",", rwRead.getMutPos()));
 
                     // format read seqs in fastq files
                     String quality = "I".repeat(fwSeqRead.length());
@@ -226,14 +226,15 @@ public class ReadSimulator {
 
                 // Format and add the genomic region
                 if (overlapStartInGenomic == overlapEndInGenomic) {
-                    // genomicRegions.add(String.valueOf(overlapStartInGenomic));
-                    genomicRegions.add(overlapStartInGenomic + "-" + overlapStartInGenomic + 1);
-                } else {
+                    genomicRegions.add(overlapStartInGenomic + "-" + (overlapStartInGenomic + 1));
+                }
+                else {
                     // On the reverse strand, ensure we output coordinates in decreasing order
                     if (strand == '+') {
-                        genomicRegions.add(overlapStartInGenomic + "-" + overlapEndInGenomic);
+                        // handle edge case
+                        genomicRegions.add(overlapStartInGenomic + "-" + (overlapEndInGenomic + 1));
                     } else {
-                        genomicRegions.add(overlapEndInGenomic + "-" + overlapStartInGenomic);
+                        genomicRegions.add(overlapEndInGenomic + "-" + (overlapStartInGenomic + 1));
                     }
                 }
             }
@@ -242,11 +243,13 @@ public class ReadSimulator {
             transcriptPosition += exonLength;
         }
 
-        if (read.isRw() && genomicRegions.size() > 1) {
+        if (strand == '-' && genomicRegions.size() > 1) {
             Collections.reverse(genomicRegions);
         }
+
         return genomicRegions;
     }
+
 
 
     public void mutateRead(Read read, double mutRate, StringBuilder sb) {
