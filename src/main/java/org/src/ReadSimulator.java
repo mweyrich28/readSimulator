@@ -14,8 +14,8 @@ public class ReadSimulator {
 
     private static final char[] NUCLEOTIDES = {'A', 'T', 'C', 'G'};
     private final Random random = new Random();
-    private Genome genome;
-    private HashMap<String, HashMap<String, Integer>> readCounts = new HashMap<>();
+    private final  Genome genome;
+    private final HashMap<String, HashMap<String, Integer>> readCounts = new HashMap<>();
 
     public ReadSimulator(int length,
                          int frlength,
@@ -101,6 +101,8 @@ public class ReadSimulator {
 
                     String fwSeqRead = transcriptSeq.substring(randomStartPos, randomStartPos + length);
                     String rwSeqRead = GenomeUtils.revComplement(transcriptSeq.substring(randomStartPos + fragmentLength - length, randomStartPos + fragmentLength));
+
+                    // organizing coordinates
                     int fwStart = randomStartPos;
                     int fwEnd = randomStartPos + length - 1;
                     int rwStart = randomStartPos + fragmentLength - length;
@@ -250,36 +252,34 @@ public class ReadSimulator {
         return genomicRegions;
     }
 
-
-
     public void mutateRead(Read read, double mutRate, StringBuilder sb) {
         String seq = read.getReadSeq();
         sb.setLength(0);
         sb.append(seq);
         int seqLength = seq.length();
 
-        // Calculate the expected number of mutations
-        int numMutations = (int) Math.round(mutRate / 100 * seqLength);
+        // Convert percentage to probability
+        double mutProb = mutRate / 100;
 
-        // Randomly select unique positions to mutate
+        // Check each position for mutation based on probability
         HashSet<Integer> mutationPositions = new HashSet<>();
-        while (mutationPositions.size() < numMutations) {
-            mutationPositions.add(random.nextInt(seqLength));
+        for (int i = 0; i < seqLength; i++) {
+            if (random.nextDouble() < mutProb) {
+                mutationPositions.add(i);
+            }
         }
 
         // Perform mutations at the selected positions
         for (int pos : mutationPositions) {
             char originalNucleotide = seq.charAt(pos);
             char newNucleotide;
-
-            // Choose a new nucleotide that is different from the original
             do {
                 newNucleotide = NUCLEOTIDES[random.nextInt(NUCLEOTIDES.length)];
             } while (newNucleotide == originalNucleotide);
-
-            sb.setCharAt(pos ,newNucleotide); // Mutate the character at the position
+            sb.setCharAt(pos, newNucleotide);
             read.addMutPos(pos);
         }
+
         read.setReadSeq(sb.toString());
     }
 }
