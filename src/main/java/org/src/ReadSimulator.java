@@ -14,20 +14,11 @@ public class ReadSimulator {
 
     private static final char[] NUCLEOTIDES = {'A', 'T', 'C', 'G'};
     private final Random random = new Random();
+    private final SplittableRandom splittableRandom = new SplittableRandom();
     private final  Genome genome;
     private final HashMap<String, HashMap<String, Integer>> readCounts = new HashMap<>();
 
-    public ReadSimulator(int length,
-                         int frlength,
-                         int SD,
-                         double mutRate,
-                         String gtfPath,
-                         String readCountsPath,
-                         String fastaPath,
-                         String idxPath,
-                         String od) throws IOException
-    {
-
+    public ReadSimulator(int length, int frlength, int SD, double mutRate, String gtfPath, String readCountsPath, String fastaPath, String idxPath, String od) throws IOException {
         this.initReadCounts(readCountsPath);
         this.genome = new Genome(idxPath, fastaPath);
         this.genome.readGTF(gtfPath, readCounts);
@@ -80,24 +71,26 @@ public class ReadSimulator {
         summaryWriter.write("readid\tchr\tgene\ttranscript\tt_fw_regvec\tt_rw_regvec\tfw_regvec\trw_regvec\tfw_mut\trw_mut");
 
 
-
-
         for (String geneKey : readCounts.keySet()) {
+
             Gene currGene = genome.getGenes().get(geneKey);
 
             for (String transcriptKey : readCounts.get(geneKey).keySet()) {
+
                 Transcript transcript = this.genome.getGenes().get(geneKey).getTranscriptMap().get(transcriptKey);
                 String transcriptSeq = transcript.getTranscriptSeq();
                 int sampleAmount = readCounts.get(geneKey).get(transcriptKey);
 
                 for (int i = 0; i < sampleAmount; i++) {
+
                     int fragmentLength;
+
                     do {
                         fragmentLength = (int) Math.round(normalDist.sample());
                     } while (fragmentLength < length || fragmentLength > transcriptSeq.length());
 
                     int maxStartPos = transcriptSeq.length() - fragmentLength;
-                    int randomStartPos = random.nextInt(maxStartPos + 1);
+                    int randomStartPos = splittableRandom.nextInt(maxStartPos + 1);
 
                     String fwSeqRead = transcriptSeq.substring(randomStartPos, randomStartPos + length);
                     String rwSeqRead = GenomeUtils.revComplement(transcriptSeq.substring(randomStartPos + fragmentLength - length, randomStartPos + fragmentLength));
@@ -199,53 +192,55 @@ public class ReadSimulator {
         int readStart = read.getStartInTranscript();
         int readEnd = read.getStopInTranscript();
 
-        int transcriptPosition = 0; // Tracks position in the transcript (1-based)
+        // tracks position in the transcript (1-based)
+        int transcriptPosition = 0;
 
         for (Exon exon : exons) {
             int exonStart = exon.getGenomicStart();
             int exonEnd = exon.getGenomicEnd();
             int exonLength = exonEnd - exonStart + 1;
 
-            // Check if the read overlaps with this exon in transcript coordinates
+            // check if the read overlaps with this exon in transcript coordinates
             if (transcriptPosition + exonLength - 1 >= readStart && transcriptPosition <= readEnd) {
-                // Calculate overlap within transcript coordinates
+                // calculate overlap within transcript coordinates
                 int overlapStartInTranscript = Math.max(readStart, transcriptPosition);
                 int overlapEndInTranscript = Math.min(readEnd, transcriptPosition + exonLength - 1);
 
-                // Map overlap to genomic coordinates based on strand
+                // map overlap to genomic coordinates based on strand
                 int overlapStartInGenomic;
                 int overlapEndInGenomic;
 
                 if (strand == '+') {
-                    // Forward strand: Calculate genomic positions from exon start
+                    // +: calculate genomic positions from exon start
                     overlapStartInGenomic = exonStart + (overlapStartInTranscript - transcriptPosition);
                     overlapEndInGenomic = exonStart + (overlapEndInTranscript - transcriptPosition);
                 } else {
-                    // Reverse strand: Calculate genomic positions from exon end (reversed order)
+                    // -: calculate genomic positions from exon end (reversed order)
                     overlapStartInGenomic = exonEnd - (overlapStartInTranscript - transcriptPosition);
                     overlapEndInGenomic = exonEnd - (overlapEndInTranscript - transcriptPosition);
                 }
 
-                // Format and add the genomic region
+                // add genomic region
                 if (overlapStartInGenomic == overlapEndInGenomic) {
                     genomicRegions.add(overlapStartInGenomic + "-" + (overlapStartInGenomic + 1));
                 }
                 else {
-                    // On the reverse strand, ensure we output coordinates in decreasing order
                     if (strand == '+') {
-                        // handle edge case
                         genomicRegions.add(overlapStartInGenomic + "-" + (overlapEndInGenomic + 1));
                     } else {
+                        // reverse strand:coordinates need to be in decreasing order
                         genomicRegions.add(overlapEndInGenomic + "-" + (overlapStartInGenomic + 1));
                     }
                 }
             }
 
-            // Advance transcript position for the next exon
+            // walk exon dist in transcript
             transcriptPosition += exonLength;
         }
 
         if (strand == '-' && genomicRegions.size() > 1) {
+            // since exons are stored in rev order for transcript of rev strand
+            // we have to reverse our order if length > 1
             Collections.reverse(genomicRegions);
         }
 
@@ -258,23 +253,24 @@ public class ReadSimulator {
         sb.append(seq);
         int seqLength = seq.length();
 
-        // Convert percentage to probability
+        // convert to prob
         double mutProb = mutRate / 100;
 
         // Check each position for mutation based on probability
+        // TDOD: use list
         HashSet<Integer> mutationPositions = new HashSet<>();
         for (int i = 0; i < seqLength; i++) {
-            if (random.nextDouble() < mutProb) {
+            if (splittableRandom.nextDouble() < mutProb) {
                 mutationPositions.add(i);
             }
         }
 
-        // Perform mutations at the selected positions
+        // mutate selected positions
         for (int pos : mutationPositions) {
             char originalNucleotide = seq.charAt(pos);
             char newNucleotide;
             do {
-                newNucleotide = NUCLEOTIDES[random.nextInt(NUCLEOTIDES.length)];
+                newNucleotide = NUCLEOTIDES[splittableRandom.nextInt(NUCLEOTIDES.length)];
             } while (newNucleotide == originalNucleotide);
             sb.setCharAt(pos, newNucleotide);
             read.addMutPos(pos);

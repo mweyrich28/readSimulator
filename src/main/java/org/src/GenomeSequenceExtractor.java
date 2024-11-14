@@ -22,6 +22,7 @@ public class GenomeSequenceExtractor {
     }
 
     public void initIndex(File fastaIdxFile) throws IOException {
+        // simply store coordinates in a HashMap
         ArrayList<String> lines = FileUtils.readLines(fastaIdxFile);
         for (String line: lines) {
             String[] components = line.split("\t");
@@ -50,10 +51,9 @@ public class GenomeSequenceExtractor {
         long startPos = (start - 1) % basesPerLine;
 
         // cal offset in bytes
-        long offset = startInFasta;
-        offset += (startLine * bytesPerLine);
-        offset += startPos;
+        long offset = startInFasta + (startLine * bytesPerLine) + startPos;
 
+        // how many nucleotides do I need to read
         int length = stop - start + 1;
 
         // how many lines do we expect

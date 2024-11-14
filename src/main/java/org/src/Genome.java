@@ -65,8 +65,6 @@ public class Genome {
 
 
     public void readGTF(String pathToGtf, HashMap<String, HashMap<String, Integer>> readCounts) throws IOException {
-        // get lines of gtf
-
         // sanity check vars
         Gene lastGene = null;
         int exonCounter = 0;
@@ -122,10 +120,8 @@ public class Genome {
                 exonCounter = 0;
 
             }
-            // if we don't have "transcript" in mainComp[2], we are either in CDS
-            // or exon of last transcript → we only need transcripts (last edit)
+            // add exon to last transcript
             else if (mainComponents[2].equals("exon")) {
-                // add exon to last transcript
                 int start = Integer.parseInt(mainComponents[3]);
                 int end = Integer.parseInt(mainComponents[4]);
                 lastGene.getLastTranscript().addExon(

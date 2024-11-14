@@ -10,6 +10,7 @@ public class Read {
     private int stopInTranscript;
     private int length;
     private ArrayList<String> mutPos = new ArrayList<>();
+
     public Read(String seq, int start, int end, int id, boolean isRw) {
         this.isRw = isRw;
         this.readSeq = seq;
