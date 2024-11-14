@@ -4,6 +4,9 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import org.src.utils.FileUtils;
 import org.src.utils.GenomeUtils;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -13,6 +16,8 @@ import java.util.*;
 public class ReadSimulator {
 
     private static final char[] NUCLEOTIDES = {'A', 'T', 'C', 'G'};
+    private static final byte[] BYTE_NUCLEOTIDES = {65, 84, 71, 67};
+
     private final SplittableRandom splittableRandom = new SplittableRandom();
     private final Genome genome;
     private final HashMap<String, HashMap<String, Integer>> readCounts = new HashMap<>();
@@ -21,7 +26,7 @@ public class ReadSimulator {
         this.initReadCounts(readCountsPath);
         this.genome = new Genome(idxPath, fastaPath);
         this.genome.readGTF(gtfPath, readCounts);
-        this.genome.initTargetGeneSeqs(readCounts);
+        this.genome.initTargetGeneSeqs(readCounts); // check
         this.generateReads(length, frlength, SD, mutRate, od);
     }
 
@@ -59,18 +64,22 @@ public class ReadSimulator {
 
         // init string builders
         StringBuilder summaryBuilder = new StringBuilder();
-        StringBuilder fwFastqBuilder = new StringBuilder();
-        StringBuilder rwFastqBuilder = new StringBuilder();
-        StringBuilder mutateSeqBuilder = new StringBuilder();
+        StringBuilder idBuilder = new StringBuilder();
+        StringBuilder qidBuilder = new StringBuilder();
 
         // for each file init buff writer
-        // int buffSize = 542_288_000;
         BufferedWriter summaryWriter = new BufferedWriter(new FileWriter(od + File.separator + "read.mappinginfo"));
-        BufferedWriter fwFastqWriter = new BufferedWriter(new FileWriter(od + File.separator + "fw.fastq"));
-        BufferedWriter rwFastqWriter = new BufferedWriter(new FileWriter(od + File.separator + "rw.fastq"));
+        BufferedOutputStream fwOutputStream = new BufferedOutputStream(new FileOutputStream(od + File.separator + "fw.fastq"));
+        BufferedOutputStream rwOutputStream = new BufferedOutputStream(new FileOutputStream(od + File.separator + "rw.fastq"));
         summaryWriter.write("readid\tchr\tgene\ttranscript\tt_fw_regvec\tt_rw_regvec\tfw_regvec\trw_regvec\tfw_mut\trw_mut");
 
+        // pre format quality
+        String quality = "I".repeat(length);
+        byte[] qualityBytes = quality.getBytes();
 
+        // allocate read arrays
+        byte[] rwByteRead = new byte[length];
+        byte[] fwByteRead = new byte[length];
         for (String geneKey : readCounts.keySet()) {
 
             Gene currGene = genome.getGenes().get(geneKey);
@@ -78,7 +87,7 @@ public class ReadSimulator {
             for (String transcriptKey : readCounts.get(geneKey).keySet()) {
 
                 Transcript transcript = this.genome.getGenes().get(geneKey).getTranscriptMap().get(transcriptKey);
-                String transcriptSeq = transcript.getTranscriptSeq();
+                byte[] byteTranscriptSeq = transcript.getByteTranscriptSeq();
                 int sampleAmount = readCounts.get(geneKey).get(transcriptKey);
 
                 for (int i = 0; i < sampleAmount; i++) {
@@ -87,13 +96,10 @@ public class ReadSimulator {
 
                     do {
                         fragmentLength = (int) Math.round(normalDist.sample());
-                    } while (fragmentLength < length || fragmentLength > transcriptSeq.length());
+                    } while (fragmentLength < length || fragmentLength > byteTranscriptSeq.length);
 
-                    int maxStartPos = transcriptSeq.length() - fragmentLength;
+                    int maxStartPos = byteTranscriptSeq.length - fragmentLength;
                     int randomStartPos = splittableRandom.nextInt(maxStartPos + 1);
-
-                    String fwSeqRead = transcriptSeq.substring(randomStartPos, randomStartPos + length);
-                    String rwSeqRead = GenomeUtils.revComplement(transcriptSeq.substring(randomStartPos + fragmentLength - length, randomStartPos + fragmentLength));
 
                     // organizing coordinates
                     int fwStart = randomStartPos;
@@ -101,12 +107,19 @@ public class ReadSimulator {
                     int rwStart = randomStartPos + fragmentLength - length;
                     int rwEnd = randomStartPos + fragmentLength - 1;
 
-                    // TODO: I don't need these objects maybe
-                    Read fwRead = new Read(fwSeqRead, fwStart, fwEnd, readId, false);
-                    Read rwRead = new Read(rwSeqRead, rwStart, rwEnd, readId, true);
 
-                    mutateRead(fwRead, mutRate, mutateSeqBuilder);
-                    mutateRead(rwRead, mutRate, mutateSeqBuilder);
+                    GenomeUtils.subsetArray(fwByteRead, byteTranscriptSeq, fwStart, fwEnd);
+
+                    GenomeUtils.subsetArray(rwByteRead, byteTranscriptSeq, rwStart, rwEnd);
+                    rwByteRead = GenomeUtils.revComplement(rwByteRead);
+
+
+                    // TODO: I don't need these objects maybe
+                    Read fwRead = new Read(fwByteRead, fwStart, fwEnd, readId, false);
+                    Read rwRead = new Read(rwByteRead, rwStart, rwEnd, readId, true);
+
+                    mutateByteRead(fwRead, mutRate);
+                    mutateByteRead(rwRead, mutRate);
 
                     ArrayList<String> fwRegVec = getGenomicRegion(fwRead, transcript, currGene.getStrand());
                     ArrayList<String> rwRegVec = getGenomicRegion(rwRead, transcript, currGene.getStrand());
@@ -125,39 +138,26 @@ public class ReadSimulator {
                             .append(String.join(",", rwRead.getMutPos()));
 
                     // format read seqs in fastq files
-                    String quality = "I".repeat(fwSeqRead.length());
-                    // avoid line breaks at end of file
-                    if (readId == 0) {
-                        fwFastqBuilder.append("@").append(readId).append("\n")
-                                .append(fwRead.getReadSeq()).append("\n")
-                                .append("+").append(readId).append("\n")
-                                .append(quality);
-                        rwFastqBuilder.append("@").append(readId).append("\n")
-                                .append(rwRead.getReadSeq()).append("\n")
-                                .append("+").append(readId).append("\n")
-                                .append(quality);
-                    } else {
-                        fwFastqBuilder.append("\n")
-                                .append("@").append(readId).append("\n")
-                                .append(fwRead.getReadSeq()).append("\n").append("+").append(readId).append("\n")
-                                .append(quality);
-                        rwFastqBuilder.append("\n")
-                                .append("@").append(readId).append("\n")
-                                .append(rwRead.getReadSeq()).append("\n").append("+").append(readId).append("\n")
-                                .append(quality);
 
-                    }
+                    String seqId = idBuilder.append("@").append(readId).append("\n").toString();
+                    String qId = qidBuilder.append("+").append(readId).append("\n").toString();
+
+                    byte[] fwSeqData = GenomeUtils.buildFastqEntry(seqId, fwRead.getReadSeqBytes(), qId, qualityBytes, readId);
+                    byte[] rwSeqData = GenomeUtils.buildFastqEntry(seqId, rwRead.getReadSeqBytes(), qId, qualityBytes, readId);
+
+                    fwOutputStream.write(fwSeqData);
+                    rwOutputStream.write(rwSeqData);
+
+                    // reset sb
+                    idBuilder.setLength(0);
+                    qidBuilder.setLength(0);
 
                     readId++;
 
                     summaryWriter.write(summaryBuilder.toString());
-                    fwFastqWriter.write(fwFastqBuilder.toString());
-                    rwFastqWriter.write(rwFastqBuilder.toString());
 
-                    // flush sbs
+                    // reset
                     summaryBuilder.setLength(0);
-                    fwFastqBuilder.setLength(0);
-                    rwFastqBuilder.setLength(0);
                 }
             }
         }
@@ -165,20 +165,12 @@ public class ReadSimulator {
         if (!summaryBuilder.isEmpty()) {
             summaryWriter.write(summaryBuilder.toString());
         }
-        if (!fwFastqBuilder.isEmpty()) {
-            fwFastqWriter.write(fwFastqBuilder.toString());
-        }
-        if (!rwFastqBuilder.isEmpty()) {
-            rwFastqWriter.write(rwFastqBuilder.toString());
-        }
-
         summaryWriter.flush();
-        fwFastqWriter.flush();
-        rwFastqWriter.flush();
-
         summaryWriter.close();
-        fwFastqWriter.close();
-        rwFastqWriter.close();
+        rwOutputStream.flush();
+        fwOutputStream.flush();
+        rwOutputStream.close();
+        fwOutputStream.close();
     }
 
     public ArrayList<String> getGenomicRegion(Read read, Transcript transcript, char strand) {
@@ -191,7 +183,8 @@ public class ReadSimulator {
         // tracks position in the transcript (1-based)
         int transcriptPosition = 0;
 
-        for (Exon exon : exons) {
+        for (int i = 0; i < exons.size(); i++) {
+            Exon exon = exons.get(i);
             int exonStart = exon.getGenomicStart();
             int exonEnd = exon.getGenomicEnd();
             int exonLength = exonEnd - exonStart + 1;
@@ -271,5 +264,25 @@ public class ReadSimulator {
         }
 
         read.setReadSeq(sb.toString());
+    }
+
+    public void mutateByteRead(Read read, double mutRate) {
+        byte[] seq = read.getReadSeqBytes();
+        int seqLength = seq.length;
+
+        // convert to prob
+        double mutProb = mutRate / 100;
+        // Check each position for mutation based on probability
+        for (int i = 0; i < seqLength; i++) {
+            if (splittableRandom.nextDouble() < mutProb) {
+                byte originalNucleotide = seq[i];
+                byte newNucleotide;
+                do {
+                    newNucleotide = BYTE_NUCLEOTIDES[splittableRandom.nextInt(BYTE_NUCLEOTIDES.length)];
+                } while (newNucleotide == originalNucleotide);
+                seq[i] = newNucleotide;
+                read.addMutPos(i);
+            }
+        }
     }
 }

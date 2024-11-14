@@ -11,6 +11,7 @@ public class Transcript {
     private final String transcriptType;
 
     private String transcriptSeq; // patched together using its exons
+    private byte[] byteTranscriptSeq; // patched together using its exons
 
     public Transcript(String transcriptId, String transcriptType, int start, int stop) {
         this.transcriptId = transcriptId;
@@ -19,10 +20,17 @@ public class Transcript {
         this.stop = stop;
         this.exonList = new ArrayList<>();
     }
-
     public void addExon(int start, int end, int pos) {
         Exon exon = new Exon(start, end, pos, end-start + 1);
         exonList.add(exon);
+    }
+
+    public int getLength() {
+        int length = 0;
+        for (Exon exon : exonList) {
+            length += exon.getLength();
+        }
+        return length;
     }
 
     public String getTranscriptId() {
@@ -39,6 +47,13 @@ public class Transcript {
 
     public void setTranscriptSeq(String transcriptSeq) {
         this.transcriptSeq = transcriptSeq;
+    }
+    public void setByteTranscriptSeq(byte[] transcriptSeq) {
+        this.byteTranscriptSeq = transcriptSeq;
+    }
+
+    public byte[] getByteTranscriptSeq() {
+        return byteTranscriptSeq;
     }
 
     public String getTranscriptSeq() {

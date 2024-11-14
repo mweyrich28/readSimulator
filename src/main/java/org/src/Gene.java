@@ -13,7 +13,7 @@ public class Gene {
     private final String chr;
     private final char strand;
 
-    private String sequence;
+    private byte[] sequence;
 
 
     public Gene(String geneId, int start, int end, String geneName, String chr, char strand) {
@@ -29,16 +29,6 @@ public class Gene {
 
     public String getGeneId() {
         return geneId;
-    }
-
-    public void invertTranscripts() {
-        for (int i = 0; i < transcriptList.size(); i++) {
-            Transcript currTranscript = transcriptList.get(i);
-            currTranscript.reversCdsList();
-            for (int j = 0; j < currTranscript.getExonList().size(); j++) {
-                currTranscript.getExonList().get(j).setPos(j);
-            }
-        }
     }
 
     public void addTranscript(Transcript transcript){
@@ -65,7 +55,7 @@ public class Gene {
         return chr;
     }
 
-    public void setSequence(String sequence) {
+    public void setSequence(byte[] sequence) {
         this.sequence = sequence;
     }
 
@@ -80,7 +70,7 @@ public class Gene {
     public char getStrand() {
         return strand;
     }
-    public String getSeq() {
+    public byte[] getSeq() {
         return sequence;
     }
 }

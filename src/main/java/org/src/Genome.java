@@ -6,6 +6,7 @@ import org.src.utils.GenomeUtils;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class Genome {
@@ -26,19 +27,20 @@ public class Genome {
         return genes;
     }
 
-    public void initTargetGeneSeqs(HashMap<String , HashMap<String, Integer>> readCounts) throws IOException {
+    public void initTargetGeneSeqs(HashMap<String, HashMap<String, Integer>> readCounts) throws IOException {
         for (String geneKey : readCounts.keySet()) {
             Gene gene = this.genes.get(geneKey);
             String chr = gene.getChr();
             int start = gene.getStart();
             int end = gene.getEnd();
-            String seq = GSE.getSequence(chr, start, end);
+            byte[] seq = GSE.getSequence(chr, start, end);
             gene.setSequence(seq);
 
             // for all transcripts of gene generate exons and trans seq
             for (String transcriptKey : readCounts.get(geneKey).keySet()) {
                 Transcript transcript = gene.getTranscriptMap().get(transcriptKey);
-                StringBuilder transcriptSeq = new StringBuilder();
+                byte[] byteTranscriptSeq = new byte[transcript.getLength()];
+                int posInTransctipt = 0;
 
                 for (int i = 0; i < transcript.getExonList().size(); i++) {
                     Exon exon = null;
@@ -51,17 +53,21 @@ public class Genome {
                     int relStart = exon.getGenomicStart() - gene.getStart();
                     int relEnd = exon.getGenomicEnd() - gene.getStart() + 1;
 
-                    transcriptSeq.append(gene.getSeq(), relStart, relEnd);
+                    // BYTES
+//                    GenomeUtils.subsetArray(byteTranscriptSeq, gene.getSeq(), relStart, relEnd-1);
+                    for (int j = relStart; j < relEnd; j++) {
+                        byteTranscriptSeq[posInTransctipt] = gene.getSeq()[j];
+                        posInTransctipt++;
+                    }
                 }
                 if (gene.getStrand() == '-') {
-                    transcript.setTranscriptSeq(GenomeUtils.revComplement(transcriptSeq.toString()));
+                    transcript.setByteTranscriptSeq(GenomeUtils.revComplement(byteTranscriptSeq));
                 } else {
-                    transcript.setTranscriptSeq(transcriptSeq.toString());
+                    transcript.setByteTranscriptSeq(byteTranscriptSeq);
                 }
             }
         }
     }
-
 
 
     public void readGTF(String pathToGtf, HashMap<String, HashMap<String, Integer>> readCounts) throws IOException {
@@ -72,10 +78,10 @@ public class Genome {
         BufferedReader buff = new BufferedReader(new FileReader(pathToGtf));
         String line;
 
-        while((line = buff.readLine()) != null) {
+        while ((line = buff.readLine()) != null) {
             // skipp all lines that don t contain a relevant gene id
             if (!FileUtils.filterLine(line, readCounts)) {
-               continue;
+                continue;
             }
 
             // extract main components (line split by \t)

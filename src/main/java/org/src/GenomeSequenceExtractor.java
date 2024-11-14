@@ -34,7 +34,7 @@ public class GenomeSequenceExtractor {
         }
     }
 
-    public String getSequence(String chr, int start, int stop) throws IOException {
+    public byte[] getSequence(String chr, int start, int stop) throws IOException {
         // skip non existent chromosomes
         if (!fastaIdx.containsKey(chr)) {
             return null;
@@ -77,16 +77,17 @@ public class GenomeSequenceExtractor {
         }
 
         // build sequence, skipping newlines
-        StringBuilder sequence = new StringBuilder(length);
+        // StringBuilder sequence = new StringBuilder(length);
+        byte[] byteSequence = new byte[length];
         int basesRead = 0;
 
         for (int i = 0; i < totalBytesRead && basesRead < length; i++) {
-            if (buffer[i] != '\n' && buffer[i] != '\r') {
-                sequence.append((char) buffer[i]);
+            if (buffer[i] != '\n' && buffer[i] != '\r' && buffer[i] != 0) {
+                byteSequence[basesRead] = buffer[i];
                 basesRead++;
             }
         }
 
-        return sequence.toString();
+        return byteSequence;
     }
 }

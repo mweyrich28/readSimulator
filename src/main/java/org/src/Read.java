@@ -5,6 +5,7 @@ import java.util.ArrayList;
 public class Read {
     private boolean isRw;
     private String readSeq;
+    private byte[] readSeqBytes;
     private int id;
     private int startInTranscript;
     private int stopInTranscript;
@@ -20,6 +21,14 @@ public class Read {
         this.length = stopInTranscript - startInTranscript;
     }
 
+    public Read(byte[] seq, int start, int end, int id, boolean isRw) {
+        this.isRw = isRw;
+        this.readSeqBytes = seq;
+        this.id = id;
+        this.startInTranscript = start;
+        this.stopInTranscript = end;
+        this.length = stopInTranscript - startInTranscript;
+    }
     public String getReadSeq() {
         return readSeq;
     }
@@ -50,5 +59,13 @@ public class Read {
 
     public boolean isRw() {
         return isRw;
+    }
+
+    public byte[] getReadSeqBytes() {
+        return readSeqBytes;
+    }
+
+    public void setReadSeqBytes(byte[] readSeqBytes) {
+        this.readSeqBytes = readSeqBytes;
     }
 }
