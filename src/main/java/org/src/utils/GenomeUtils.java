@@ -20,14 +20,4 @@ public class GenomeUtils {
         }
         return new String(result);
     }
-
-    private static int getNumericValue(char nucleotide) {
-        return switch (nucleotide) {
-            case 'A' -> 0;
-            case 'C' -> 1;
-            case 'G' -> 2;
-            case 'T' -> 3;
-            default -> throw new IllegalArgumentException("Invalid nucleotide: " + nucleotide);
-        };
-    }
 }

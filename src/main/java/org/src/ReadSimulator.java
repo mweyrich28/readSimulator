@@ -14,7 +14,7 @@ public class ReadSimulator {
 
     private static final char[] NUCLEOTIDES = {'A', 'T', 'C', 'G'};
     private final SplittableRandom splittableRandom = new SplittableRandom();
-    private final  Genome genome;
+    private final Genome genome;
     private final HashMap<String, HashMap<String, Integer>> readCounts = new HashMap<>();
 
     public ReadSimulator(int length, int frlength, int SD, double mutRate, String gtfPath, String readCountsPath, String fastaPath, String idxPath, String od) throws IOException {
@@ -22,13 +22,13 @@ public class ReadSimulator {
         this.genome = new Genome(idxPath, fastaPath);
         this.genome.readGTF(gtfPath, readCounts);
         this.genome.initTargetGeneSeqs(readCounts);
-        this.generateReads(length, frlength, SD, mutRate, 100, od);
+        this.generateReads(length, frlength, SD, mutRate, od);
     }
 
     public void initReadCounts(String readCountsPath) throws IOException {
         ArrayList<String> lines = FileUtils.readLines(new File(readCountsPath));
 
-        for (String line: lines) {
+        for (String line : lines) {
             // skip header
             if (line.startsWith("gene")) {
                 continue;
@@ -45,7 +45,7 @@ public class ReadSimulator {
         }
     }
 
-    public void generateReads(int length, int frlength, int SD, double mutRate, int batchSize, String od) throws IOException {
+    public void generateReads(int length, int frlength, int SD, double mutRate, String od) throws IOException {
 
         // create od if not existent
         File outputDir = new File(od);
@@ -64,6 +64,7 @@ public class ReadSimulator {
         StringBuilder mutateSeqBuilder = new StringBuilder();
 
         // for each file init buff writer
+        // int buffSize = 542_288_000;
         BufferedWriter summaryWriter = new BufferedWriter(new FileWriter(od + File.separator + "read.mappinginfo"));
         BufferedWriter fwFastqWriter = new BufferedWriter(new FileWriter(od + File.separator + "fw.fastq"));
         BufferedWriter rwFastqWriter = new BufferedWriter(new FileWriter(od + File.separator + "rw.fastq"));
@@ -135,8 +136,7 @@ public class ReadSimulator {
                                 .append(rwRead.getReadSeq()).append("\n")
                                 .append("+").append(readId).append("\n")
                                 .append(quality);
-                    }
-                    else {
+                    } else {
                         fwFastqBuilder.append("\n")
                                 .append("@").append(readId).append("\n")
                                 .append(fwRead.getReadSeq()).append("\n").append("+").append(readId).append("\n")
@@ -150,17 +150,14 @@ public class ReadSimulator {
 
                     readId++;
 
-                    // batch writing
-                    if (readId % batchSize == 0) {
-                        summaryWriter.write(summaryBuilder.toString());
-                        fwFastqWriter.write(fwFastqBuilder.toString());
-                        rwFastqWriter.write(rwFastqBuilder.toString());
+                    summaryWriter.write(summaryBuilder.toString());
+                    fwFastqWriter.write(fwFastqBuilder.toString());
+                    rwFastqWriter.write(rwFastqBuilder.toString());
 
-                        // flush sbs
-                        summaryBuilder.setLength(0);
-                        fwFastqBuilder.setLength(0);
-                        rwFastqBuilder.setLength(0);
-                    }
+                    // flush sbs
+                    summaryBuilder.setLength(0);
+                    fwFastqBuilder.setLength(0);
+                    rwFastqBuilder.setLength(0);
                 }
             }
         }
@@ -222,8 +219,7 @@ public class ReadSimulator {
                 // add genomic region
                 if (overlapStartInGenomic == overlapEndInGenomic) {
                     genomicRegions.add(overlapStartInGenomic + "-" + (overlapStartInGenomic + 1));
-                }
-                else {
+                } else {
                     if (strand == '+') {
                         genomicRegions.add(overlapStartInGenomic + "-" + (overlapEndInGenomic + 1));
                     } else {
