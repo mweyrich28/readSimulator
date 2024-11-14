@@ -13,7 +13,6 @@ import java.util.*;
 public class ReadSimulator {
 
     private static final char[] NUCLEOTIDES = {'A', 'T', 'C', 'G'};
-    private final Random random = new Random();
     private final SplittableRandom splittableRandom = new SplittableRandom();
     private final  Genome genome;
     private final HashMap<String, HashMap<String, Integer>> readCounts = new HashMap<>();
@@ -257,8 +256,7 @@ public class ReadSimulator {
         double mutProb = mutRate / 100;
 
         // Check each position for mutation based on probability
-        // TDOD: use list
-        HashSet<Integer> mutationPositions = new HashSet<>();
+        ArrayList<Integer> mutationPositions = new ArrayList<>();
         for (int i = 0; i < seqLength; i++) {
             if (splittableRandom.nextDouble() < mutProb) {
                 mutationPositions.add(i);
