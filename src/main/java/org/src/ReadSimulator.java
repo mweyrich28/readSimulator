@@ -61,10 +61,8 @@ public class ReadSimulator {
         StringBuilder summaryBuilder = new StringBuilder();
         StringBuilder fwFastqBuilder = new StringBuilder();
         StringBuilder rwFastqBuilder = new StringBuilder();
-        StringBuilder mutateSeqBuilder = new StringBuilder();
 
         // for each file init buff writer
-        // int buffSize = 542_288_000;
         BufferedWriter summaryWriter = new BufferedWriter(new FileWriter(od + File.separator + "read.mappinginfo"));
         BufferedWriter fwFastqWriter = new BufferedWriter(new FileWriter(od + File.separator + "fw.fastq"));
         BufferedWriter rwFastqWriter = new BufferedWriter(new FileWriter(od + File.separator + "rw.fastq"));
@@ -105,8 +103,8 @@ public class ReadSimulator {
                     Read fwRead = new Read(fwSeqRead, fwStart, fwEnd, readId, false);
                     Read rwRead = new Read(rwSeqRead, rwStart, rwEnd, readId, true);
 
-                    mutateRead(fwRead, mutRate, mutateSeqBuilder);
-                    mutateRead(rwRead, mutRate, mutateSeqBuilder);
+                    mutateRead(fwRead, mutRate);
+                    mutateRead(rwRead, mutRate);
 
                     ArrayList<String> fwRegVec = getGenomicRegion(fwRead, transcript, currGene.getStrand());
                     ArrayList<String> rwRegVec = getGenomicRegion(rwRead, transcript, currGene.getStrand());
@@ -242,34 +240,26 @@ public class ReadSimulator {
         return genomicRegions;
     }
 
-    public void mutateRead(Read read, double mutRate, StringBuilder sb) {
+    public void mutateRead(Read read, double mutRate) {
         String seq = read.getReadSeq();
-        sb.setLength(0);
-        sb.append(seq);
+        StringBuilder sb = new StringBuilder(seq);
         int seqLength = seq.length();
 
         // convert to prob
         double mutProb = mutRate / 100;
 
         // Check each position for mutation based on probability
-        ArrayList<Integer> mutationPositions = new ArrayList<>();
         for (int i = 0; i < seqLength; i++) {
             if (splittableRandom.nextDouble() < mutProb) {
-                mutationPositions.add(i);
+                char originalNucleotide = seq.charAt(i);
+                char newNucleotide;
+                do {
+                    newNucleotide = NUCLEOTIDES[splittableRandom.nextInt(NUCLEOTIDES.length)];
+                } while (newNucleotide == originalNucleotide);
+                sb.setCharAt(i, newNucleotide);
+                read.addMutPos(i);
             }
         }
-
-        // mutate selected positions
-        for (int pos : mutationPositions) {
-            char originalNucleotide = seq.charAt(pos);
-            char newNucleotide;
-            do {
-                newNucleotide = NUCLEOTIDES[splittableRandom.nextInt(NUCLEOTIDES.length)];
-            } while (newNucleotide == originalNucleotide);
-            sb.setCharAt(pos, newNucleotide);
-            read.addMutPos(pos);
-        }
-
         read.setReadSeq(sb.toString());
     }
 }
