@@ -1,0 +1,197 @@
+\documentclass[12pt]{article}
+\usepackage{paper,math}
+\addbibresource{references.bib}
+
+\title{Genomorientierte Bioinformatik \\ Report \\ Read Simulator}
+\author{Malte Weyrich}
+\date{\today}
+% Conditionally display thoughts (hide by switching to `\boolfalse`)
+% \booltrue{INCLUDECOMMENTS}
+\newcommand{\malte}[1]{\coauthorComment[Malte]{#1}}
+
+\begin{document}
+
+% Title Page -------------------------------------------------------------------
+\maketitle
+\begin{abstract}
+	In bioinformatics, \textit{\textbf{Next Generation Sequencing}} (NGS) is a term used to describe the process of gathering
+	genomic data like the sequence of nucleotides in our DNA.
+	There are different types of sequencing techniques (e.g \textit{Illumina}, \textit{Oxford Nanopore} etc.)
+	and different variants of \textit{sequencing} (\textit{ATAC-seq}, \textit{scRNA-seq}, \textit{ChIP-seq}, ...).
+	In this report, we will focus on a \textit{Read Simulator} which is a tool used to
+	simulate the results of a sequencing experiment (in this case paired end sequencing using \textit{Illumina}).
+	The program was executed using \textit{Homo\_sapiens.GRCh37.75.dna.toplevel.fa} as \textit{Reference
+		Genome}, its corresponding \textit{fasta index} and its annotation in form of a \textit{Gene Transfer Format}-File (GTF).
+	The \textit{Read Simulator} was written in \textit{Java} and will be benchmarked and analyzed by its complexity and correctness.
+    The results of simulator itself will also be discussed in this report. 
+\end{abstract}
+
+\newpage
+
+
+% Paper ------------------------------------------------------------------------
+
+% ------------------------------------------------------------------------------
+\section{Introduction}
+% ------------------------------------------------------------------------------
+The simplified process of \textit{Illumina} sequencing is as follows:
+Several DNA target sequences get treated with ultra sound,
+in order to break it down into smaller fragments of a certain length with a certain margin of error (e.g. 200 bp +/- $x$ bp).
+These fragments are labeled and then placed onto a flow cell, where they are amplified and sequenced.
+This generates an abundance of short reads, which often overlap with each other and contain mutations.
+The reads are then aligned to a \textit{Reference Genome} via a \textit{Mapper} like \textit{STAR}, in order to determine the original sequence.
+The \textit{Read Simulator} is a tool that simulates this process of generating fragments and reads for given transcript sequences.
+In our case we simulate a paired end sequencing experiment, where we generate two reads for each fragment, one for each end of the fragment.
+We can test the performance of the \textit{Mapper} and other tools that are used in the analysis of sequencing data,
+since we know where our reads originated from.
+A downside of the \textit{Read Simulator} is that it assumes a normal distribution of fragment lengths and
+their starting position inside the transcript
+and a constant mutation rate across the entire read sequences, which in reality is not the case.
+But it is still a useful tool for testing the performance of other tools.
+\newpage
+
+% ------------------------------------------------------------------------------
+
+\section{Java Implementation}
+\subsection{Logic}
+The logic of the \textit{Read Simulator} is split up into four main steps:
+\begin{enumerate}
+	\item[\textbf{(A)}] \textbf{Read Gene \& Transcript IDs to Simulate}:\\
+		The user specifies a \textit{tsv} file containing the gene and transcript IDs of the sequences and the
+		amount of reads to simulate for each transcript. The file is passed to the \textit{ReadSimulator}
+		via the \texttt{-readcounts} argument. The entries are stored inside a nested \\
+		\textit{HashMap<String, HashMap<String,Integer>\hspace{0.1mm}> readCounts} object where
+		the first key corresponds to the gene ID and maps to a second map, which maps the transcript ID to the amount of reads to simulate.
+		This way we avoid storing the same gene ID multiple times and can easily access the amount of reads to simulate for a given transcript.
+	\item[\textbf{(B)}] \textbf{Initialize Genome using a GTF-File}:\\
+		The \textit{Genome} class is initialized by passing the path of the \textit{Reference Genome} and the \textit{Fasta Index} file to the constructor.
+		The path of the \textit{Reference Genome} is used to create a \textit{RandomAccessFile} object, which is used to
+		access the large fasta file in a more efficient way by utilizing the indices stored in the \textit{Fasta Index}.
+		This will later be used to extract the sequences of \textit{Genes} containing the \textit{Transcripts} we want to simulate reads for.
+		The \textit{GTF} file and \textit{readCounts} object are then passed to the \textit{Genome} object to initialize the gene and transcript coordinates.
+		Each line of the \textit{GTF-File} is filtered using \textit{GenomeUtils.filterLine(line, readCounts)}, which
+		basically checks if the \textit{Gene ID} of the line is present in the \textit{readCounts} object.
+		The method works by counting the number of seen \textit{<tabs>} in the current line and then extracting the \textit{Gene ID},
+		which is located in between the 8th and 9th \textit{<tab>} of the line. This way we don't
+		call expensive \textit{split()} operations on each line of the \textit{GTF-File}.
+		If a valid line was found, we only need to check if it is a \textit{gene}/\textit{transcript}/\textit{exon} entry
+		and either create a new \textit{Gene}/\textit{Transcript}/\textit{Exon} object. A \textit{Gene}
+		can have several \textit{Transcript}'s and a \textit{Transcript} can have several \textit{Exon}'s.
+		Due to the filtering of \textit{GenomeUtils.filterLine}, our \textit{Genome} object will only contain \textit{Genes} and
+		\textit{Transcripts} we want to simulate reads for.
+	\item[\textbf{(C)}] \textbf{Initialize Gene Sequences of Interest}:\\
+		In order to simulate reads, we first need to extract the exonic sequences of the \textit{Transcripts}.
+		This is done by calling \textit{Genome.initTargetSequences(readCounts)}, which iterates over all \textit{Genes} and
+		\textit{Transcripts} in the \textit{readCounts} object. For each \textit{Gene} we extract its sequence using
+		the \textit{RandomAccessFile} object and store it in a \textit{String seq} object. This is done by
+		utilizing the start/end coordinates of the \textit{Gene} together with the \textit{Fasta Index}
+		to can calculate the byte offset of the \textit{Gene} in the \textit{Reference Genome}
+		file and read in the sequence.
+		The \textit{seq} object can now be used to concatenate the \textit{Transcript} sequences by
+		cutting out the exonic sequences of the corresponding \textit{Transcript} based on their
+		start and end coordinates.
+		This way, we avoid repeatedly accessing the \textit{Reference Genome} file which
+		is time inefficient due to the large size of the file and the vast amount of \textit{Exons} we need to extract.
+		If a \textit{Gene} is located on the reverse strand, we go through the \textit{Exons} in reverse order.
+	\item[\textbf{(D)}] \textbf{Generate Reads and Write to File}:\\
+		For each \textit{Transcript} we want to simulate reads for, we sample a random fragment length and starting position from a normal distribution.
+		These two values and the specified \textit{read length} are used to extract two substrings of the \textit{Transcript} sequence:
+		\begin{verbatim}
+do {
+    fragmentLength = (int) Math.round(normalDist.sample());
+} while (fragmentLength < length || fragmentLength > transcriptSeq.length());
+int maxStartPos = transcriptSeq.length() - fragmentLength;
+int randomStartPos = splittableRandom.nextInt(maxStartPos + 1);
+String fwSeqRead = transcriptSeq.substring(
+                        randomStartPos, 
+                        randomStartPos + length
+                    );
+String rwSeqRead = GenomeUtils.revComplement(
+                        transcriptSeq.substring(
+                            randomStartPos + fragmentLength - length, 
+                            randomStartPos + fragmentLength
+                        ));
+       \end{verbatim}
+		These two \textit{Strings} resemble the unmutated forward (\textit{fw}) and reverse (\textit{rw}) sequence of the \textit{Read}.
+		The \textit{start/end} positions inside the \textit{Transcript}, the \textit{Read} sequence, the \textit{Read ID} and a \textit{boolean} indicating if the \textit{Read}
+		is the forward or reverse \textit{Read}, are then collected in a \textit{Read} object (\textit{fwRead} or \textit{rwRead}).
+		We iterate over each nucleotide of the \textit{Read} and use the \textit{mutationRate} to determine if we should mutate the nucleotide of the
+		current position.
+		Mutations to the original nucleotide are not considered, so we only mutate to one of the other three nucleotides.
+		The next step is to derive the \textit{Genomic Region Vector} of both \textit{Reads}.
+		In figure \ref{fig:mapping} we can see the mapping of the \textit{Reads} to the \textit{Reference Genome} using the prior knowledge of the \textit{Exon} coordinates.
+
+		\begin{figure}[htpb]
+			\centering
+			\includegraphics[width=0.95\textwidth]{"./figures/Map.png"}
+			\caption{Mapping of Reads to the Reference Genome. This figure was created using \cite{biorender}}
+			\label{fig:mapping}
+		\end{figure}
+
+		The method \textit{getGenomicRegion} is used to annotate the generated \textit{Reads} with the corresponding \textit{Genomic Region Vector}.
+		We start by extracting the list of \textit{Exons} from the provided \textit{Transcript} object and getting the
+		\textit{Read}’s \textit{start} and \textit{end} positions inside the \textit{Transcript}. For each \textit{Exon}, we calculate its genomic \textit{start}, \textit{end}, and \textit{length}.
+		By checking if the \textit{Read} overlaps with the current \textit{Exon} in \textit{Transcript} coordinates, we identify the overlapping region.
+		This region is then mapped to genomic coordinates, accounting for the strand direction.
+		Finally, the genomic regions are formatted and stored in a list, ensuring proper coordinate ordering for the reverse strand,
+		before proceeding to the next \textit{Exon}.
+
+		After both \textit{Reads} have been generated and annotated with their \textit{Genomic Region Vectors}, we write them to two separate \textit{fastq} files
+		(\textit{"fw.fastq"} and \textit{"rw.fastq"}) in the following format:
+		\begin{verbatim}
+@0
+CTAAAAGGCGCAAGAGAATGGATGATAGTAGTGTCCTCGAGGCCACACGGGTT...
++0
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII...
+    \end{verbatim}
+		The \textit{Read ID} is followed by the \textit{Read} sequence and a \textit{+} sign. The quality scores are represented by the \textit{ASCII} characters
+		\textit{I} in this case. The quality scores are not considered in the \textit{Read Simulator} and are set to the same value for all \textit{Reads}.
+        A summary of the generated \textit{Reads} is also created and written to a \textit{tsv} file (\textit{"read.mappinginfo"}) in the following format (table \ref{tab:summary-format}):
+
+
+\setlength{\tabcolsep}{3pt} 
+\begin{table}[htpb]
+    \centering
+    \caption{Format of the Summary File created by the Read Simulator. Each row corresponds to a Read Pair (\textit{fwRead} and \textit{rwRead}).}
+    \label{tab:summary-format}
+    \small 
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+        \hline
+        id & chr & gene\_id & transcript\_id & t\_fw\_regvec & t\_rw\_regvec & fw\_regvec & rw\_regvec & fw\_mut & rw\_mut \\ \hline
+        \dots & \dots & \dots & \dots & \dots & \dots & \dots & \dots & \dots & \dots \\
+        \hline
+    \end{tabular}
+\end{table}
+
+The \textit{Read} objects are discarded after writing them to the files, in order to save memory.
+Writing is done by three separate \textit{BufferedWriter} objects, one for each file.
+The entries are constructed using three different \textit{StringBuilder} objects, which are then written to the files and reset afterwards.
+
+\end{enumerate}
+
+\subsection{Complexity}
+\subsection{Correctness}
+\subsection{Benchmarking}
+
+\section{Results}
+
+
+
+% ------------------------------------------------------------------------------
+% \printbibliography
+% ------------------------------------------------------------------------------
+
+
+% ------------------------------------------------------------------------------
+\newpage~\appendix
+% ------------------------------------------------------------------------------
+
+\section{Appendix Section}
+
+hm
+
+Text goes here
+
+
+
+\end{document}

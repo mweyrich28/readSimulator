@@ -40,3 +40,7 @@ build/
 .idea/
 inputFiles/
 output/*
+
+report/*
+!report/readSimulator.pdf
+!report/readSimulator.tex
