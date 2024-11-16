@@ -20,7 +20,7 @@ public class ReadSimulator {
     public ReadSimulator(int length, int frlength, int SD, double mutRate, String gtfPath, String readCountsPath, String fastaPath, String idxPath, String od) throws IOException {
         this.initReadCounts(readCountsPath);
         this.genome = new Genome(idxPath, fastaPath);
-        this.genome.readGTF(gtfPath, readCounts);
+        this.genome.readGTF(gtfPath, readCounts); // O(n) n = lines
         this.genome.initTargetGeneSeqs(readCounts);
         this.generateReads(length, frlength, SD, mutRate, od);
     }
