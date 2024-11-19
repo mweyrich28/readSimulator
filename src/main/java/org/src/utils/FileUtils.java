@@ -5,45 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class FileUtils {
-    public static ArrayList<String> readFilterLines(File r) throws IOException {
-        ArrayList<String> fileLines = new ArrayList<>();
-        BufferedReader buff = new BufferedReader(new FileReader(r));
-        String line;
-        StringBuilder relevantCol = new StringBuilder();
-
-        while((line = buff.readLine()) != null){
-            // only read in lines with CDS / exon
-            // skip comments
-            if (line.charAt(0) == '#') {
-                continue;
-            }
-
-            // save memory by selecting correct col based on tabCount
-            int tabCount = 0;
-            relevantCol.setLength(0); // reset sb
-            for (int i = 0; i < line.length(); i++) {
-                if (line.charAt(i) == '\t') {
-                    tabCount++;
-                }
-                else if (tabCount == 2) {
-                    relevantCol.append(line.charAt(i));
-                    continue;
-                }
-
-                if ("exon".contentEquals(relevantCol) || "transcript".contentEquals(relevantCol) || "gene".contentEquals(relevantCol)) {
-                    fileLines.add(line);
-                    break;
-                }
-
-                if (tabCount == 3) {
-                    break;
-                }
-            }
-
-        }
-        return fileLines;
-    }
-
     public static boolean filterLine(String line, HashMap<String, HashMap<String, Integer>> readCounts) throws IOException {
         StringBuilder relevantCol = new StringBuilder();
 

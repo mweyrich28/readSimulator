@@ -1,6 +1,7 @@
 package org.src;
 
 import org.src.utils.FileUtils;
+import org.src.utils.GenomeUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,60 +34,77 @@ public class GenomeSequenceExtractor {
             this.fastaIdx.put(components[0], values);
         }
     }
-
     public String getSequence(String chr, int start, int stop) throws IOException {
-        // skip non existent chromosomes
+        // this shouldn't happen
+        if (start > stop) {
+            throw new IllegalArgumentException("Start position must be less than or equal to stop position");
+        }
+
+        // skip chrs
         if (!fastaIdx.containsKey(chr)) {
             return null;
         }
 
-        // get idx data
+        // get index
         ArrayList<Long> faIdx = fastaIdx.get(chr);
         long startInFasta = faIdx.get(1);
         long basesPerLine = faIdx.get(2);
         long bytesPerLine = faIdx.get(3);
 
-        // get file coordinates
-        long startLine = start / basesPerLine;
+        long startLine = (start - 1) / basesPerLine;
         long startPos = (start - 1) % basesPerLine;
+        long endLine = (stop - 1) / basesPerLine;
 
-        // cal offset in bytes
+        // calc offset
         long offset = startInFasta + (startLine * bytesPerLine) + startPos;
 
-        // how many nucleotides do I need to read
+        // determine total bytes to read accurately
         int length = stop - start + 1;
-
-        // how many lines do we expect
-        int expectedLines = (int) ((startPos + length) / basesPerLine);
-        if ((startPos + length) % basesPerLine == 0) expectedLines--;
-
-        // total bytes to read including newlines
-        int bytesToRead = length + expectedLines;
-
-        // jump to correct pos
-        this.fasta.seek(offset);
+        int linesToRead = (int)(endLine - startLine + 1);
+        int bytesToRead = length + linesToRead;
 
         byte[] buffer = new byte[bytesToRead];
-        int totalBytesRead = 0;
 
-        // read all bytes
-        while (totalBytesRead < bytesToRead) {
-            int read = this.fasta.read(buffer, totalBytesRead, bytesToRead - totalBytesRead);
+        // seek and read with robust error handling
+        this.fasta.seek(offset);
+        int totalBytesRead = 0;
+        int bytesRemaining = bytesToRead;
+
+        while (bytesRemaining > 0) {
+            int read = this.fasta.read(buffer, totalBytesRead, bytesRemaining);
             if (read == -1) break;  // EOF
             totalBytesRead += read;
+            bytesRemaining -= read;
         }
 
-        // build sequence, skipping newlines
+        // init sb
         StringBuilder sequence = new StringBuilder(length);
         int basesRead = 0;
 
         for (int i = 0; i < totalBytesRead && basesRead < length; i++) {
-            if (buffer[i] != '\n' && buffer[i] != '\r') {
-                sequence.append((char) buffer[i]);
+            char currentChar = (char) buffer[i];
+            if (currentChar != '\n' && currentChar != '\r') {
+                sequence.append(currentChar);
                 basesRead++;
             }
         }
-
         return sequence.toString();
+    }
+
+    public String extractRegion(ArrayList<String> regions, String chromosome, char strand, boolean isRw) throws IOException {
+        StringBuilder seq = new StringBuilder();
+        for (int j = 0; j < regions.size(); j++) {
+            String[] test = regions.get(j).split("-"); //
+            int start = Integer.parseInt(test[0]);
+            int end = Integer.parseInt(test[1]);
+            String subSeq = this.getSequence(chromosome, start, end - 1);
+            seq.append(subSeq);
+        }
+        if (strand == '+' && isRw || strand == '-' && !isRw) {
+            return GenomeUtils.revComplement(seq.toString());
+        }
+        else {
+            return seq.toString();
+        }
     }
 }

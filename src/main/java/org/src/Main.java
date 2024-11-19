@@ -7,6 +7,8 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.io.IOException;
 
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+
 public class Main {
     public static void main(String[] args) throws IOException {
         // add argparser
@@ -21,6 +23,7 @@ public class Main {
             parser.addArgument("-fasta").required(true).help("Path to Fasta.");
             parser.addArgument("-fidx").required(true).help("Path to Fasta Index. This should correspond to your provided Fasta.");
             parser.addArgument("-readcounts").required(true).help("A TSV containing Entries of Transcripts to be simulated x Amount.");
+            parser.addArgument("-debug").action(storeTrue()).help("Validates Genomic Region Vectors of Reads.");
 
             Namespace ns = parser.parseArgs(args);
             String gtfPath = ns.getString("gtf");
@@ -32,8 +35,9 @@ public class Main {
             String fastaPath = ns.getString("fasta");
             String idxPath = ns.getString("fidx");
             String readCountsPath = ns.getString("readcounts");
+            boolean debug = ns.get("debug");
 
-            ReadSimulator r = new ReadSimulator(length , frlength , SD , mutRate , gtfPath, readCountsPath , fastaPath , idxPath , od);
+            ReadSimulator r = new ReadSimulator(length , frlength , SD , mutRate , gtfPath, readCountsPath , fastaPath , idxPath , od, debug);
 
         }
         // print usage entry if not all required args were provided

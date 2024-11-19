@@ -13,15 +13,18 @@ import java.util.*;
 public class ReadSimulator {
 
     private static final char[] NUCLEOTIDES = {'A', 'T', 'C', 'G'};
+    private static boolean debug = false;
     private final SplittableRandom splittableRandom = new SplittableRandom();
     private final Genome genome;
     private final HashMap<String, HashMap<String, Integer>> readCounts = new HashMap<>();
 
-    public ReadSimulator(int length, int frlength, int SD, double mutRate, String gtfPath, String readCountsPath, String fastaPath, String idxPath, String od) throws IOException {
+    public ReadSimulator(int length, int frlength, int SD, double mutRate, String gtfPath, String readCountsPath, String fastaPath, String idxPath, String od, boolean debug) throws IOException {
+        ReadSimulator.debug = debug;
         this.initReadCounts(readCountsPath);
         this.genome = new Genome(idxPath, fastaPath);
         this.genome.readGTF(gtfPath, readCounts); // O(n) n = lines
         this.genome.initTargetGeneSeqs(readCounts);
+//        System.out.println(genome.getGSE().getSequence("9",112918620,112918695 ));
         this.generateReads(length, frlength, SD, mutRate, od);
     }
 
@@ -102,6 +105,27 @@ public class ReadSimulator {
                     // TODO: I don't need these objects maybe
                     Read fwRead = new Read(fwSeqRead, fwStart, fwEnd, readId, false);
                     Read rwRead = new Read(rwSeqRead, rwStart, rwEnd, readId, true);
+
+                    if (debug) {
+                        ArrayList<String> reg = getGenomicRegion(fwRead, transcript, currGene.getStrand());
+                        boolean correctFw = fwRead.getReadSeq().equals(this.genome.getGSE().extractRegion(reg, currGene.getChr(), currGene.getStrand(), false));
+
+                        reg = getGenomicRegion(rwRead, transcript, currGene.getStrand());
+                        boolean correctRw = rwRead.getReadSeq().equals(this.genome.getGSE().extractRegion(reg, currGene.getChr(), currGene.getStrand(), true));
+
+                        if (!(correctRw && correctFw)) {
+                            reg = getGenomicRegion(fwRead, transcript, currGene.getStrand());
+                            System.out.println("FWR " + reg);
+                            System.out.println("FWS " + fwSeqRead);
+                            System.out.println("EXT " + this.genome.getGSE().extractRegion(reg, currGene.getChr(), currGene.getStrand(), false));
+
+                            reg = getGenomicRegion(rwRead, transcript, currGene.getStrand());
+                            System.out.println("RWR " + reg);
+                            System.out.println("RWS " + rwSeqRead);
+                            System.out.println("EXT " + this.genome.getGSE().extractRegion(reg, currGene.getChr(), currGene.getStrand(), true));
+                            throw new RuntimeException("Read does not match with its GenomicReadVector");
+                        }
+                    }
 
                     mutateRead(fwRead, mutRate);
                     mutateRead(rwRead, mutRate);
