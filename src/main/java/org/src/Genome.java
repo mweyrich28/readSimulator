@@ -4,6 +4,7 @@ import org.src.utils.FileUtils;
 import org.src.utils.GenomeUtils;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
@@ -132,6 +133,50 @@ public class Genome {
                 exonCounter++;
             }
         }
+    }
+
+    public void validateTranscripts(String transcriptomePath, HashMap<String, HashMap<String, Integer>> readCounts) throws IOException {
+       HashMap<String, StringBuilder> transcriptome = new HashMap<>();
+
+        BufferedReader buff = new BufferedReader(new FileReader(transcriptomePath));
+        String line;
+        // init relevant transcript seqs
+        String transcriptID = null;
+        String geneID = null;
+        boolean relevant = false;
+        while((line = buff.readLine()) != null) {
+           if(line.startsWith(">")) {
+               String[] components = line.split(" ");
+               transcriptID = components[0].substring(1);
+               geneID = components[3].substring(5);
+               if (readCounts.containsKey(geneID) && readCounts.get(geneID).containsKey(transcriptID)) {
+                   transcriptome.put(transcriptID, new StringBuilder());
+                   relevant = true;
+                   continue;
+               } else {
+                   relevant = false;
+                   continue;
+               }
+           }
+
+           if (relevant) {
+               transcriptome.get(transcriptID).append(line.trim());
+           }
+        }
+
+        int count = 0;
+        for (String geneId: readCounts.keySet()) {
+            for (String transcriptId : readCounts.get(geneId).keySet()) {
+                String expected = transcriptome.get(transcriptId).toString();
+                String actual = this.genes.get(geneId).getTranscriptMap().get(transcriptId).getTranscriptSeq();
+                count++;
+                if (!actual.equals(expected)) {
+                    throw new RuntimeException("Transcript " + transcriptId + " of gene " + geneId + " does not correspond to reference in transcriptome.\nREF: " +
+                            expected + "\nGOT: " + actual );
+                }
+            }
+        }
+        System.out.println("DEBUG: ALL " + count + " TRANSCRIPTS HAVE BEEN SUCCESSFULLY VALIDATED VIA PROVIDED TRANSCRIPTOME.");
     }
 
     public GenomeSequenceExtractor getGSE() {

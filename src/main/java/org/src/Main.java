@@ -24,6 +24,8 @@ public class Main {
             parser.addArgument("-fidx").required(true).help("Path to Fasta Index. This should correspond to your provided Fasta.");
             parser.addArgument("-readcounts").required(true).help("A TSV containing Entries of Transcripts to be simulated x Amount.");
             parser.addArgument("-debug").action(storeTrue()).help("Validates Genomic Region Vectors of Reads.");
+            parser.addArgument("-transcriptome").help("Optional parameter. If transcriptome is provided together with -debug flag, validates all " +
+                    "extracted transcripts using the transcriptome.");
 
             Namespace ns = parser.parseArgs(args);
             String gtfPath = ns.getString("gtf");
@@ -36,8 +38,9 @@ public class Main {
             String idxPath = ns.getString("fidx");
             String readCountsPath = ns.getString("readcounts");
             boolean debug = ns.get("debug");
+            String transcriptomePath= ns.get("transcriptome");
 
-            ReadSimulator r = new ReadSimulator(length , frlength , SD , mutRate , gtfPath, readCountsPath , fastaPath , idxPath , od, debug);
+            ReadSimulator r = new ReadSimulator(length , frlength , SD , mutRate , gtfPath, readCountsPath , fastaPath , idxPath , od, debug, transcriptomePath);
 
         }
         // print usage entry if not all required args were provided

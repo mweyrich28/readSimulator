@@ -18,13 +18,15 @@ public class ReadSimulator {
     private final Genome genome;
     private final HashMap<String, HashMap<String, Integer>> readCounts = new HashMap<>();
 
-    public ReadSimulator(int length, int frlength, int SD, double mutRate, String gtfPath, String readCountsPath, String fastaPath, String idxPath, String od, boolean debug) throws IOException {
+    public ReadSimulator(int length, int frlength, int SD, double mutRate, String gtfPath, String readCountsPath, String fastaPath, String idxPath, String od, boolean debug, String transcriptomePath) throws IOException {
         ReadSimulator.debug = debug;
         this.initReadCounts(readCountsPath);
         this.genome = new Genome(idxPath, fastaPath);
         this.genome.readGTF(gtfPath, readCounts); // O(n) n = lines
         this.genome.initTargetGeneSeqs(readCounts);
-//        System.out.println(genome.getGSE().getSequence("9",112918620,112918695 ));
+        if (debug && transcriptomePath != null) {
+            genome.validateTranscripts("/home/malte/projects/gobi/readSimulator/inputFiles/Homo_sapiens.GRCh37.75.cdna.all.fa", readCounts);
+        }
         this.generateReads(length, frlength, SD, mutRate, od);
     }
 
@@ -114,6 +116,7 @@ public class ReadSimulator {
                         boolean correctRw = rwRead.getReadSeq().equals(this.genome.getGSE().extractRegion(reg, currGene.getChr(), currGene.getStrand(), true));
 
                         if (!(correctRw && correctFw)) {
+                            System.out.println("DEBUG:");
                             reg = getGenomicRegion(fwRead, transcript, currGene.getStrand());
                             System.out.println("FWR " + reg);
                             System.out.println("FWS " + fwSeqRead);
@@ -123,7 +126,7 @@ public class ReadSimulator {
                             System.out.println("RWR " + reg);
                             System.out.println("RWS " + rwSeqRead);
                             System.out.println("EXT " + this.genome.getGSE().extractRegion(reg, currGene.getChr(), currGene.getStrand(), true));
-                            throw new RuntimeException("Read does not match with its GenomicReadVector");
+                            throw new RuntimeException("Read " + readId + " does not match with its GenomicReadVector.");
                         }
                     }
 
