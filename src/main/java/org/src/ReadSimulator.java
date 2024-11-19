@@ -20,14 +20,42 @@ public class ReadSimulator {
 
     public ReadSimulator(int length, int frlength, int SD, double mutRate, String gtfPath, String readCountsPath, String fastaPath, String idxPath, String od, boolean debug, String transcriptomePath) throws IOException {
         ReadSimulator.debug = debug;
-        this.initReadCounts(readCountsPath);
+        long before;
+        long after;
+        ArrayList<Long> IRC = new ArrayList<>();
+        ArrayList<Long> GTF = new ArrayList<>();
+        ArrayList<Long> ITG = new ArrayList<>();
+        ArrayList<Long> GR = new ArrayList<>();
+
         this.genome = new Genome(idxPath, fastaPath);
-        this.genome.readGTF(gtfPath, readCounts); // O(n) n = lines
-        this.genome.initTargetGeneSeqs(readCounts);
-        if (debug && transcriptomePath != null) {
-            genome.validateTranscripts("/home/malte/projects/gobi/readSimulator/inputFiles/Homo_sapiens.GRCh37.75.cdna.all.fa", readCounts);
+
+        for (int i = 0; i < 30; i++) {
+            before = System.currentTimeMillis();
+            this.initReadCounts(readCountsPath);
+            after = System.currentTimeMillis();
+            IRC.add(after-before);
+
+            before = System.currentTimeMillis();
+            this.genome.readGTF(gtfPath, readCounts);
+            after = System.currentTimeMillis();
+            GTF.add(after-before);
+
+            before = System.currentTimeMillis();
+            this.genome.initTargetGeneSeqs(readCounts);
+            after = System.currentTimeMillis();
+            ITG.add(after-before);
+            if (debug && transcriptomePath != null) {
+                genome.validateTranscripts(transcriptomePath, readCounts);
+            }
+            before = System.currentTimeMillis();
+            this.generateReads(length, frlength, SD, mutRate, od);
+            after = System.currentTimeMillis();
+            GR.add(after-before);
         }
-        this.generateReads(length, frlength, SD, mutRate, od);
+        System.out.println("IRC" + IRC.stream().mapToLong(Long::longValue).sum() / 30);
+        System.out.println("GTF" + GTF.stream().mapToLong(Long::longValue).sum() / 30);
+        System.out.println("ITG" + ITG.stream().mapToLong(Long::longValue).sum() / 30);
+        System.out.println("GR" + GR.stream().mapToLong(Long::longValue).sum() / 30);
     }
 
     public void initReadCounts(String readCountsPath) throws IOException {
@@ -59,6 +87,7 @@ public class ReadSimulator {
         }
 
         int readId = 0;
+        int readsGenerated = 0;
 
         NormalDistribution normalDist = new NormalDistribution(frlength, SD);
 
@@ -172,6 +201,9 @@ public class ReadSimulator {
                                 .append(quality);
 
                     }
+                    if (debug) {
+                        readsGenerated+=2;
+                    }
 
                     readId++;
 
@@ -204,6 +236,21 @@ public class ReadSimulator {
         summaryWriter.close();
         fwFastqWriter.close();
         rwFastqWriter.close();
+
+        if (debug) {
+            int expectedReadsGenerated = 0;
+            for (String geneKey : readCounts.keySet()) {
+                for (String transcriptKey : readCounts.get(geneKey).keySet()) {
+                    expectedReadsGenerated += 2 * readCounts.get(geneKey).get(transcriptKey);
+                }
+            }
+
+            if (expectedReadsGenerated != readsGenerated) {
+                throw new RuntimeException("Not all reads were generated:\nExpected: " + expectedReadsGenerated + "\nGenerated: " + readsGenerated);
+            } else {
+                System.out.println("DEBUG: " + readsGenerated+ "/" + expectedReadsGenerated + " of reads were successfully generated.");
+            }
+        }
     }
 
     public ArrayList<String> getGenomicRegion(Read read, Transcript transcript, char strand) {
