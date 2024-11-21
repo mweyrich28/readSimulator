@@ -20,42 +20,15 @@ public class ReadSimulator {
 
     public ReadSimulator(int length, int frlength, int SD, double mutRate, String gtfPath, String readCountsPath, String fastaPath, String idxPath, String od, boolean debug, String transcriptomePath) throws IOException {
         ReadSimulator.debug = debug;
-        long before;
-        long after;
-        ArrayList<Long> IRC = new ArrayList<>();
-        ArrayList<Long> GTF = new ArrayList<>();
-        ArrayList<Long> ITG = new ArrayList<>();
-        ArrayList<Long> GR = new ArrayList<>();
 
         this.genome = new Genome(idxPath, fastaPath);
-
-        for (int i = 0; i < 30; i++) {
-            before = System.currentTimeMillis();
-            this.initReadCounts(readCountsPath);
-            after = System.currentTimeMillis();
-            IRC.add(after-before);
-
-            before = System.currentTimeMillis();
-            this.genome.readGTF(gtfPath, readCounts);
-            after = System.currentTimeMillis();
-            GTF.add(after-before);
-
-            before = System.currentTimeMillis();
-            this.genome.initTargetGeneSeqs(readCounts);
-            after = System.currentTimeMillis();
-            ITG.add(after-before);
-            if (debug && transcriptomePath != null) {
-                genome.validateTranscripts(transcriptomePath, readCounts);
-            }
-            before = System.currentTimeMillis();
-            this.generateReads(length, frlength, SD, mutRate, od);
-            after = System.currentTimeMillis();
-            GR.add(after-before);
+        this.initReadCounts(readCountsPath);
+        this.genome.readGTF(gtfPath, readCounts);
+        this.genome.initTargetGeneSeqs(readCounts);
+        if (debug && transcriptomePath != null) {
+            genome.validateTranscripts(transcriptomePath, readCounts);
         }
-        System.out.println("IRC" + IRC.stream().mapToLong(Long::longValue).sum() / 30);
-        System.out.println("GTF" + GTF.stream().mapToLong(Long::longValue).sum() / 30);
-        System.out.println("ITG" + ITG.stream().mapToLong(Long::longValue).sum() / 30);
-        System.out.println("GR" + GR.stream().mapToLong(Long::longValue).sum() / 30);
+        this.generateReads(length, frlength, SD, mutRate, od);
     }
 
     public void initReadCounts(String readCountsPath) throws IOException {
@@ -202,7 +175,7 @@ public class ReadSimulator {
 
                     }
                     if (debug) {
-                        readsGenerated+=2;
+                        readsGenerated += 2;
                     }
 
                     readId++;
@@ -248,7 +221,7 @@ public class ReadSimulator {
             if (expectedReadsGenerated != readsGenerated) {
                 throw new RuntimeException("Not all reads were generated:\nExpected: " + expectedReadsGenerated + "\nGenerated: " + readsGenerated);
             } else {
-                System.out.println("DEBUG: " + readsGenerated+ "/" + expectedReadsGenerated + " of reads were successfully generated.");
+                System.out.println("DEBUG: " + readsGenerated + "/" + expectedReadsGenerated + " of reads were successfully generated.");
             }
         }
     }
