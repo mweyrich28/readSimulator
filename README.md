@@ -40,3 +40,5 @@ However, it is still a valuable tool for testing the performance of other tools.
 
 
 ![Map](./report/figures/Map.png)
+
+> This figure was created using BioRender. For more information, visit [BioRender](https://BioRender.com).
