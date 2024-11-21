@@ -47,3 +47,5 @@ report/*
 !report/simulation.pdf
 !report/simulation.tex
 !report/simulation.html
+!report/figures/
+!report/figures/Map.png
