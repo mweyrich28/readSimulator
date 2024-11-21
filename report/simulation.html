@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Malte Weyrich" />
+  <meta name="dcterms.date" content="2024-11-21" />
+  <title>Genomorientierte Bioinformatik Report Read Simulator</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    div.abstract {
+      margin: 2em 2em 2em 2em;
+      text-align: left;
+      font-size: 85%;
+    }
+    div.abstract-title {
+      font-weight: bold;
+      text-align: center;
+      padding: 0;
+      margin-bottom: 0.5em;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Genomorientierte Bioinformatik<br />
+Report<br />
+Read Simulator</h1>
+<p class="author">Malte Weyrich</p>
+<p class="date">2024-11-21</p>
+<div class="abstract">
+<div class="abstract-title">Abstract</div>
+<p>In bioinformatics, <em><strong>Sequencing</strong></em> is a term
+used to describe the process of gathering genomic data by reading the
+nucleotides of a DNA molecule. This is done by a <em>sequencer</em>.
+There are different types of sequencing techniques (e.g
+<em>Illumina</em> (next generation sequencing), <em>Oxford
+Nanopore</em>, <em>Pacbio</em> (third generation sequencing), etc.) and
+different variants of <em>sequencing</em> (<em>ATAC-seq</em>,
+<em>scRNA-seq</em>, <em>ChIP-seq</em>, ...). In this report, we will
+focus on a <em>Read Simulator</em> which is a tool used to simulate the
+results of a sequencing experiment (in this case paired end sequencing
+using <em>Illumina</em>). The program was executed using
+<em>"Homo_sapiens.GRCh37.75.dna.toplevel.fa"</em> as <em>Reference
+Genome</em>, its corresponding <em>fasta index</em> and its annotation
+in form of a <em>Gene Transfer Format</em>-File (GTF). The <em>Read
+Simulator</em> was written in <em>Java</em> and will be benchmarked and
+analyzed by its complexity and correctness. The results of simulator
+itself will also be discussed in this report.</p>
+</div>
+</header>
+<h1 id="sec:intro">Introduction</h1>
+<p>The simplified process of <em>Illumina</em> sequencing is as follows:
+Several DNA target sequences get treated with ultra sound, in order to
+break it down into smaller fragments of a certain length with a certain
+margin of error (e.g. 200 bp +/- <span
+class="math inline"><em>x</em></span> bp). These fragments are labeled
+and then placed onto a flow cell, where they are amplified and
+sequenced. This generates an abundance of short reads, which often
+overlap with each other and contain mutations. The reads are then
+aligned to a <em>Reference Genome</em> via a <em>Mapper</em> like
+<em>STAR</em>, in order to determine the original sequence. The <em>Read
+Simulator</em> is a tool that simulates this process of generating
+fragments and reads for given transcript sequences. In our case we
+simulate a paired end sequencing experiment, where we generate two reads
+for each fragment, one for each end of the fragment. With a <em>Read
+Simulator</em> we are able to validate the results of <em>Mappers</em>,
+since we know where our reads originated from. In other words, if a
+<em>Mapper</em> was to incorrectly map a read (generated by our <em>Read
+Simulator</em>) to the <em>Reference Genome</em>, we could detect this
+faulty behavior and see how far off the <em>Mapper</em> was to the
+actual coordinates. Like this, we could also detect entire regions
+inside the <em>Reference Genome</em> where the <em>Mapper</em> struggles
+in general (e.g. highly repetitive regions). A downside of the <em>Read
+Simulator</em> is that it assumes a normal distribution of fragment
+lengths and their starting position inside the transcript and a constant
+mutation rate across the entire read sequences, which in reality is not
+the case. But it is still a useful tool for testing the performance of
+other tools.</p>
+<p>The <em>JAR</em> was executed using the following configuration:</p>
+<pre><code>java -jar readSimulator.jar 
+     -length 75 
+     -frlength 200
+     -SD 80 
+     -mutationrate 1.0 
+     -gtf &quot;./inputFiles/Homo_sapiens.GRCh37.75.gtf&quot; 
+     -fasta &quot;./inputFiles/Homo_sapiens.GRCh37.75.dna.toplevel.fa&quot; 
+     -fidx &quot;./inputFiles/Homo_sapiens.GRCh37.75.dna.toplevel.fa.fai&quot; 
+     -readcounts &quot;./inputFiles/readcounts.simulation&quot; 
+     -od &quot;output&quot;</code></pre>
+<h1 id="java-implementation">Java Implementation</h1>
+<h2 id="sec:logic">Logic</h2>
+<p>The logic of the <em>Read Simulator</em> is split up into four main
+steps:</p>
+<ol>
+<li><p><strong>Read Gene &amp; Transcript IDs to
+Simulate</strong>:<br />
+The user specifies a <em>tsv</em> file containing the gene and
+transcript IDs of the sequences and the amount of reads to simulate for
+each transcript. The file is passed to the <em>ReadSimulator</em> via
+the <code>-readcounts</code> argument. The entries are stored inside a
+nested<br />
+<em>HashMap&lt;String, HashMap&lt;String,Integer&gt;&gt; readCounts</em>
+object where the first key corresponds to the gene ID and maps to a
+second map, which maps the transcript ID to the amount of reads to
+simulate. This way we avoid storing the same gene ID multiple times and
+can easily access the amount of reads to simulate for a given
+transcript.</p></li>
+<li><p><strong>Initialize Genome using a GTF-File</strong>:<br />
+The <em>Genome</em> class is initialized by passing the path of the
+<em>Reference Genome</em> and the <em>Fasta Index</em> file to the
+constructor. The path of the <em>Reference Genome</em> is used to create
+a <em>RandomAccessFile</em> object, which is used to access the large
+fasta file in a more efficient way by utilizing the indices stored in
+the <em>Fasta Index</em>. This will later be used to extract the
+sequences of genes containing the transcripts we want to simulate reads
+for. The <em>GTF</em> file and <em>readCounts</em> object are then
+passed to the <em>Genome</em> object to initialize the gene and
+transcript coordinates. Each line of the <em>GTF-File</em> is filtered
+using <em>GenomeUtils.filterLine(line, readCounts)</em>, which basically
+checks if the gene ID of the line is present in the <em>readCounts</em>
+object. The method works by counting the number of seen
+<em>&lt;tabs&gt;</em> in the current line and then extracting the gene
+ID, which is located in between the 8th and 9th <em>&lt;tab&gt;</em> of
+the line. This way we don’t call expensive <em>split()</em> operations
+on each line of the <em>GTF-File</em>. If a valid line was found, we
+only need to check if it is a
+<em>"gene"</em>/<em>"transcript"</em>/<em>"exon"</em> entry and either
+create a new <em>Gene</em>/<em>Transcript</em>/<em>Exon</em> object. A
+<em>Gene</em> can have several <em>Transcript</em>’s and a
+<em>Transcript</em> can have several <em>Exon</em>’s. Due to the
+filtering of <em>GenomeUtils.filterLine</em>, our <em>Genome</em> object
+will only contain <em>Genes</em> and <em>Transcripts</em> we want to
+simulate reads for.</p></li>
+<li><p><strong>Initialize Gene Sequences of Interest</strong>:<br />
+In order to simulate reads, we first need to extract the exonic
+sequences of the <em>Transcripts</em>. This is done by calling
+<em>Genome.initTargetSequences(readCounts)</em>, which iterates over all
+<em>Genes</em> and <em>Transcripts</em> in the <em>readCounts</em>
+object. For each <em>Gene</em> we extract its sequence using the
+<em>RandomAccessFile</em> object and store it in a <em>String seq</em>
+object. This is done by utilizing the start/end coordinates of the
+<em>Gene</em> together with the <em>Fasta Index</em> to can calculate
+the byte offset of the <em>Gene</em> in the <em>Reference Genome</em>
+file and read in the sequence. The <em>seq</em> object can now be used
+to concatenate the <em>Transcript</em> sequences by cutting out the
+exonic sequences of the corresponding <em>Transcript</em> based on their
+start and end coordinates. This way, we avoid repeatedly accessing the
+<em>Reference Genome</em> file which is time inefficient due to the
+large size of the file and the vast amount of <em>Exons</em> we need to
+extract. If a <em>Gene</em> is located on the reverse strand, we go
+through the <em>Exons</em> in reverse order.</p></li>
+<li><p><strong>Generate Reads and Write to File</strong>:<br />
+For each <em>Transcript</em> we want to simulate reads for, we sample a
+random fragment length and starting position from a normal distribution.
+These two values and the specified <em>read length</em> are used to
+extract two substrings of the <em>Transcript</em> sequence:</p>
+<pre><code>do {
+    fragmentLength = (int) Math.round(normalDist.sample());
+} while (fragmentLength &lt; length || fragmentLength &gt; transcriptSeq.length());
+int maxStartPos = transcriptSeq.length() - fragmentLength;
+int randomStartPos = splittableRandom.nextInt(maxStartPos + 1);
+String fwSeqRead = transcriptSeq.substring(
+                        randomStartPos, 
+                        randomStartPos + length
+                    );
+String rwSeqRead = GenomeUtils.revComplement(
+                        transcriptSeq.substring(
+                            randomStartPos + fragmentLength - length, 
+                            randomStartPos + fragmentLength
+                        ));</code></pre>
+<p>These two <em>Strings</em> resemble the unmutated forward
+(<em>fw</em>) and reverse (<em>rw</em>) sequence of the <em>Read</em>.
+The <em>start/end</em> positions inside the <em>Transcript</em>, the
+<em>Read</em> sequence, the <em>Read ID</em> and a <em>boolean</em>
+indicating if the <em>Read</em> is the forward or reverse <em>Read</em>,
+are then collected in a <em>Read</em> object (<em>fwRead</em> or
+<em>rwRead</em>). We iterate over each nucleotide of the <em>Read</em>
+and use the <em>mutationRate</em> to determine if we should mutate the
+nucleotide of the current position. Mutations to the original nucleotide
+are not considered, so we only mutate to one of the other three
+nucleotides. The next step is to derive the <em>Genomic Region
+Vector</em> of both <em>Reads</em>. In figure <a href="#fig:mapping"
+data-reference-type="ref" data-reference="fig:mapping">1</a> we can see
+the mapping of the <em>Reads</em> to the <em>Reference Genome</em> using
+the prior knowledge of the <em>Exon</em> coordinates.</p>
+<figure id="fig:mapping">
+<img src="./figures/Map.png" style="width:95.0%" />
+<figcaption>Mapping of Reads (of length 50) to the Reference Genome
+using prior knowledge. This figure was created using <span
+class="citation" data-cites="biorender"></span>.</figcaption>
+</figure>
+<p>The method <em>getGenomicRegion</em> is used to annotate the
+generated <em>Reads</em> with the corresponding <em>Genomic Region
+Vector</em>. We start by extracting the list of <em>Exons</em> from the
+provided <em>Transcript</em> object and getting the <em>Read</em>’s
+<em>start</em> and <em>end</em> positions inside the
+<em>Transcript</em>. For each <em>Exon</em>, we calculate its genomic
+<em>start</em>, <em>end</em>, and <em>length</em>. By checking if the
+<em>Read</em> overlaps with the current <em>Exon</em> in
+<em>Transcript</em> coordinates, we identify the overlapping region.
+This region is then mapped to genomic coordinates, accounting for the
+strand direction. Finally, the genomic regions are formatted and stored
+in a list, ensuring proper coordinate ordering for the reverse strand,
+before proceeding to the next <em>Exon</em>.</p>
+<p>After both <em>Reads</em> have been generated and annotated with
+their <em>Genomic Region Vectors</em>, we write them to two separate
+<em>fastq</em> files (<em>"fw.fastq"</em> and <em>"rw.fastq"</em>) in
+the following format:</p>
+<pre><code>@0
+CTAAAAGGCGCAAGAGAATGGATGATAGTAGTGTCCTCGAGGCCACACGGGTT...
++0
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII...</code></pre>
+<p><span id="fastq" label="fastq"></span> The <em>Read ID</em> is
+followed by the <em>Read</em> sequence and a <em>+</em> sign. The
+quality scores are represented by the <em>ASCII</em> characters
+<em>I</em> in this case. The quality scores are not considered in the
+<em>Read Simulator</em> and are set to the same value for all
+<em>Reads</em>. A summary of the generated <em>Reads</em> is also
+created and written to a <em>tsv</em> file (<em>"read.mappinginfo"</em>)
+in the following format (table <a href="#tab:summary-format"
+data-reference-type="ref"
+data-reference="tab:summary-format">1</a>):</p>
+<div id="tab:summary-format">
+<table>
+<caption>Format of the Summary File created by the Read Simulator. Each
+row corresponds to a Read Pair (<em>fwRead</em> and
+<em>rwRead</em>).</caption>
+<thead>
+<tr class="header">
+<th style="text-align: center;">id</th>
+<th style="text-align: center;">chr</th>
+<th style="text-align: center;">gene_id</th>
+<th style="text-align: center;">transcript_id</th>
+<th style="text-align: center;">t_fw_regvec</th>
+<th style="text-align: center;">t_rw_regvec</th>
+<th style="text-align: center;">fw_regvec</th>
+<th style="text-align: center;">rw_regvec</th>
+<th style="text-align: center;">fw_mut</th>
+<th style="text-align: center;">rw_mut</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+<td style="text-align: center;">…</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The <em>Read</em> objects are discarded after writing them to the
+files, in order to save memory. Writing is done by three separate
+<em>BufferedWriter</em> objects, one for each file. The entries are
+constructed using three different <em>StringBuilder</em> objects, which
+are then written to the files and reset afterwards.</p></li>
+</ol>
+<h2 id="complexity">Complexity</h2>
+<p>The complexity of the <em>Read Simulator</em> can be broken down into
+the parts described above:</p>
+<ol>
+<li><p><strong>Read Gene &amp; Transcript IDs to
+Simulate</strong>:<br />
+Section (A) of the <em>ReadSimulator</em> scales linearly with the
+amount of lines (<span
+class="math inline">|<em>L</em><sub><em>s</em><em>i</em><em>m</em></sub>|</span>)
+in the <em>tsv</em> file, since we create an entry of each line in the
+<em>readCounts</em> object: <span
+class="math display">𝒪(|<em>L</em><sub><em>s</em><em>i</em><em>m</em></sub>|).</span></p></li>
+<li><p><strong>Initialize Genome using a GTF-File</strong>:<br />
+Let <span
+class="math inline"><em>L</em><sub><em>g</em><em>t</em><em>f</em></sub></span>
+be a set of all lines in the provided <em>GTF-File</em>. Each line <span
+class="math inline"><em>l</em> ∈ <em>L</em><sub><em>g</em><em>t</em><em>f</em></sub></span>
+has to be checked by the <em>filterLine</em> method <span
+class="math inline">(<em>F</em>)</span> of <em>FileUtils</em>: <span
+class="math display">$$\sum_{i=1}^{|L_{gtf}|} F(l_{i})
+            .$$</span> <span class="math inline"><em>F</em></span>
+iterates over all chars in <span
+class="math inline"><em>l</em><sub><em>i</em></sub></span> and extracts
+a substring (<em>relevantCol</em>) based on the number of observed
+<em>&lt;tabs&gt;</em> and <em>&lt;spaces&gt;</em>. All these operations
+are constant in <span class="math inline">𝒪(1)</span>. Let <span
+class="math inline"><em>l̄</em></span> be the upper limit for the length
+of a <em>GTF</em> entry. In the worst case, all lines have the maximum
+length <span class="math inline"><em>l̄</em></span>. Then each call of
+<span class="math inline"><em>F</em></span> has less than <span
+class="math inline"><em>l̄</em></span> operations, since we stop
+processing the line <span
+class="math inline"><em>l</em><sub><em>i</em></sub></span> after
+constructing the relevant substring. In <span
+class="math inline">𝒪</span>-notation, <span
+class="math inline">𝒪(<em>F</em>(<em>l</em><sub><em>i</em></sub>)) ∈ 𝒪(1)</span>,
+since <span class="math inline"><em>l̄</em></span> is a constant and
+<span class="math inline">#</span> operations of <span
+class="math inline"><em>F</em> &lt; <em>l̄</em></span>. For the relevant
+lines <span
+class="math inline"><em>l</em><sub><em>r</em><em>e</em><em>l</em></sub></span>
+(lines that survived filtering), we perform several <em>split()</em>
+operations on the entry, and, based on the entry type, parse the
+<em>gene ID</em> or <em>transcript ID</em>. Let <span
+class="math inline"><em>P</em>(<em>l</em><sub><em>r</em><em>e</em><em>l</em></sub>)</span>
+describe the remaining amount of work needed for parsing the entry. In a
+worst case, all lines are relevant and need to be processed with <span
+class="math inline"><em>P</em></span>. Since all these operations are
+sequential and tied to the number of lines in the <em>GTF-File</em>, the
+overall complexity of <strong>(B)</strong> can be described with: <span
+class="math display">$$\sum_{i=1}^{|L_{gtf}|} F(l_{i}) + P(l_{rel}) &lt;
+\sum_{i=1}^{|L_{gtf}|} F(l_{i}) + P(l_{i}) = \sum_{i=1}^{|L_{gtf}|}
+c_{1} + c_{2} = |L_{gtf}| \cdot (c_{1} + c_{2}) \in
+\mathcal{O}(|L_{gtf}|)
+            .$$</span></p></li>
+<li><p><strong>Initialize Gene Sequences of Interest</strong>:<span
+id="initTargetSequences" label="initTargetSequences"></span><br />
+Let <span class="math inline"><em>G</em></span> and <span
+class="math inline"><em>T</em></span> be the set of genes and transcript
+we want to simulate (stored in <em>readCounts</em>) and <span
+class="math inline"><em>E</em><sub><em>m</em><em>a</em><em>x</em></sub></span>
+be the largest set of exons of a <span
+class="math inline"><em>t</em> ∈ <em>T</em></span>. Let’s also assume
+that each gene has exactly one transcript (worst case, because we need
+to call <em>GeneSequenceExtractor.getSequence</em> for each <span
+class="math inline"><em>t</em> ∈ <em>T</em></span>).</p>
+<p>For each entry <span
+class="math inline">(<em>g</em>,<em>t</em>,<em>c</em><em>o</em><em>u</em><em>n</em><em>t</em><em>s</em>|<em>g</em>∈<em>G</em>∧<em>t</em>∈<em>T</em>) ∈ <em>r</em><em>e</em><em>a</em><em>d</em><em>C</em><em>o</em><em>u</em><em>n</em><em>t</em><em>s</em></span>,
+we need to extract the gene sequence of <span
+class="math inline"><em>g</em></span>. This happens by calculating the
+<em>offset</em> (<span class="math inline"> ∈ 𝒪(1)</span>) and reading
+in the sequence of length <span class="math inline"><em>n</em></span>
+(<span class="math inline"> ∈ 𝒪(<em>n</em>)</span>). Let’s also define
+<span
+class="math inline"><em>n</em><sub><em>m</em><em>a</em><em>x</em></sub></span>
+as the longest gene sequence. After extracting the sequence, the
+transcript sequence needs to be initialized by iterating over its exons.
+We can use <span
+class="math inline"><em>E</em><sub><em>m</em><em>a</em><em>x</em></sub></span>
+as an upper limit for this. Using these variables, the complexity can be
+described with: <span class="math display">$$\sum_{i=1}^{|readConts|}
+n_{i} + |E|_{i} &lt; \sum_{i=1}^{|readConts|} n_{max} + |E_{max}| \in
+\mathcal{O}\Big(|readCounts| \cdot (n_{max} + |E_{max}|)\Big)
+            .$$</span></p></li>
+<li><p><strong>Generate Reads and Write to File</strong>:<br />
+At this stage of the program, all transcript sequences have been
+initialized and all that’s left is to simulate the reads. Let <span
+class="math inline"><em>R</em></span> be the sum of all <em>count
+entries</em> of the <em>readCounts</em> object, meaning <span
+class="math inline"><em>R</em></span> is the total number of reads to
+simulate. For each read, we need to:</p>
+<ol>
+<li><p>Cut out a random fragment of the transcript</p></li>
+<li><p>Generate two substrings stemming from that fragment
+(<em>fwSeqRead, rwSeqRead</em>)</p></li>
+<li><p>Mutate these substrings</p></li>
+<li><p>Write reads to result files</p></li>
+</ol>
+<p>Let <span class="math inline"><em>e</em></span> be the summary
+content per line. We can formulate the above into the following
+expression: <span class="math display">$$\sum_{i=1}^{R}
+\mathbf{CUT}(frlength) + 2 \cdot \mathbf{GEN}(length) + 2 \cdot
+\mathbf{MUT}(length) + 2 \cdot \mathbf{WRT}(length) + \mathbf{WRT}(e)
+            .$$</span> Creating a substring in <em>Java</em> with
+<em>String.substring()</em> has a complexity of the length of the
+substring. This means that <span
+class="math display"><strong>C</strong><strong>U</strong><strong>T</strong>(<em>f</em><em>r</em><em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em>) ∈ 𝒪(<em>f</em><em>r</em><em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em>) ∧ <strong>G</strong><strong>E</strong><strong>N</strong>(<em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em>) ∈ 𝒪(<em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em>).</span>
+Mutating the reads is also a linear task since we iterate over <span
+class="math inline"><em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em></span>
+and for each iteration we perform constant operations of <span
+class="math inline">𝒪(1)</span>: <span
+class="math display"><strong>M</strong><strong>U</strong><strong>T</strong>(<em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em>) ∈ 𝒪(<em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em>).</span>
+The two <em>fastq</em> files generated both contain four lines per read,
+which is a total of <span
+class="math display">2 ⋅ (2 ⋅ <em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em> + 2 + |<em>i</em><em>d</em>|)</span>
+chars. So <span
+class="math display"><strong>W</strong><strong>R</strong><strong>T</strong>(2 ⋅ (2⋅<em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em>+2+|<em>i</em><em>d</em>|)) ∈ 𝒪(<em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em>).</span>
+The summary file generated contains one entry <span
+class="math inline"><em>e</em></span> for each read pair. Let <span
+class="math inline"><em>e</em><sub><em>m</em><em>a</em><em>x</em></sub></span>
+be the entire with the most chars: <span
+class="math inline">∀<sub><em>e</em> ∈ <em>e</em><em>n</em><em>t</em><em>r</em><em>i</em><em>e</em><em>s</em></sub> : |<em>e</em>| ≤ |<em>e</em><sub><em>m</em><em>a</em><em>x</em></sub>|</span>.
+This means <span
+class="math display"><strong>W</strong><strong>R</strong><strong>T</strong>(<em>e</em>) ∈ 𝒪(|<em>e</em><sub><em>m</em><em>a</em><em>x</em></sub>|).</span></p>
+<p>Since <span
+class="math inline"><em>f</em><em>r</em><em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em></span>
+and <span
+class="math inline"><em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em></span>
+are fixed constants provided by the user and because <span
+class="math inline"><em>e</em><sub><em>m</em><em>a</em><em>x</em></sub></span>
+is also a finite upper bound, the overall runtime complexity is:</p>
+<p><span
+class="math display">$$\sum_{i=1}^{R}   \overbrace{\overbrace{\mathbf{CUT}(frlength)}^{c_{1}}  +
+2 \cdot \overbrace{\mathbf{GEN}(length)}^{c_{2}}  + 2 \cdot
+\overbrace{\mathbf{MUT}(length)}^{c_{3}}  + 2 \cdot
+\overbrace{\mathbf{WRT}(length)}^{c_{4}}  +
+\overbrace{\mathbf{WRT}(e_{max})}^{c_{5}}}^{C} = \\
+$$</span> <span class="math display">$$\sum_{i=1}^{R} C = R \cdot C
+\implies \mathcal{O}(R \cdot C) \in \mathcal{O}(R)$$</span></p></li>
+</ol>
+<h2 id="correctness">Correctness</h2>
+<p>The user can provide two additional flags to the <em>JAR</em>:</p>
+<ol>
+<li><p><em>-debug</em><br />
+If <em>-debug</em> is provided, the <em>JAR</em> will try to validate
+all <em>GenomicRegionVectors</em> by comparing the current (non-mutated)
+read sequence to a reference sequence. The reference sequence is created
+by iterating over all coordinates of the corresponding
+<em>GenomicRegionVector</em>. This is done for both the <em>fwRead</em>
+and <em>rwRead</em> objects. If a single read sequence does not match
+the reference sequence, the <em>JAR</em> throws a
+<em>RuntimeException</em> and provides the user with the relevant debug
+information. Additionally, it will also check if all reads are
+generated. If not, the <em>JAR</em> will throw a
+<em>RuntimeException</em>.</p></li>
+<li><p><em>-transcriptome &lt;pathToTranscriptome&gt;</em> (in
+combination with <em>-debug</em>)<br />
+If the user additionally provides a path to a transcriptome
+corresponding to the input files (<em>GTF-File</em>, <em>fasta</em>,
+<em>fidx</em>), the <em>JAR</em> will test all generated transcript
+sequences (Step <strong>(C)</strong>) by comparing them to the correct
+sequences of the transcriptome. If a mismatch occurs, the <em>JAR</em>
+will also throw a <em>RuntimeException</em>, otherwise a debug statement
+will be printed. This debug case ensures, that our
+<em>GenomicSequenceExtractor</em> is working correctly and that the
+sequences of the transcripts are extracted correctly.</p></li>
+</ol>
+<p><br />
+If these two debug test pass, we ensure that the generated reads and
+their <em>GenomicRegionVectors</em> are correct (based on the provided
+input files). Using the plots in section <a href="#sec:results"
+data-reference-type="ref" data-reference="sec:results">3</a>, we can
+also see that the fragment length and starting position of the reads are
+distributed as expected. Conclusively, we can say that the <em>Read
+Simulator</em> is correct.</p>
+<h2 id="benchmarking">Benchmarking</h2>
+<p>Steps <strong>(B) - (D)</strong> were benchmarked by executing the
+<em>readSimulator JAR</em> 30 times using the parameters defined in
+section <a href="#sec:intro" data-reference-type="ref"
+data-reference="sec:intro">1</a>.</p>
+<figure id="fig:plots-times-jpg">
+<img src="./plots/times.jpg" style="width:80.0%" />
+<figcaption>Mean <em>JAR</em> performance in ms after 30 executions
+measured on <em>AMD Ryzen 7 PRO 4750U with Radeon Graphics (16) @
+1.700GHz</em>.</figcaption>
+</figure>
+<p>Figure <a href="#fig:plots-times-jpg" data-reference-type="ref"
+data-reference="fig:plots-times-jpg">2</a> shows us that generating the
+reads takes significantly longer than the other steps. This was
+expected, since the <em>JAR</em> had to simulate 7,777,500 reads per
+run. As described in section <a href="#sec:logic"
+data-reference-type="ref" data-reference="sec:logic">2.1</a>, the
+<em>generateReads</em> <strong>(D)</strong> method does several jobs at
+once (generating reads, mutating them and writing them). Usually one
+would prefer to split these tasks into several smaller methods, but due
+to the vast amount of reads generated, it is really memory intensive to
+do so. Splitting up <em>generateReads</em> would require to store all
+<em>Read</em> objects in a data structure and lead to excessive heap
+usage.</p>
+<figure id="fig:generateReads-ma">
+<img src="./plots/generateReads_times.jpg" />
+<img src="./plots/generateReads_ma.jpg" />
+<figcaption><em>generateReads</em> method<br />
+analyzed by memory allocations using <em>IntelliJ
+Profiler</em>.</figcaption>
+</figure>
+<p>In Figure <a href="#fig:generateReads-time" data-reference-type="ref"
+data-reference="fig:generateReads-time">[fig:generateReads-time]</a> and
+<a href="#fig:generateReads-ma" data-reference-type="ref"
+data-reference="fig:generateReads-ma">3</a> we can see method
+<strong>(D)</strong> split up into its components based on <em>CPU
+time</em> and <em>memory allocations</em>. Note that the component
+<em>unknown</em> in Figure <a href="#fig:generateReads-time"
+data-reference-type="ref"
+data-reference="fig:generateReads-time">[fig:generateReads-time]</a> was
+the fraction of <em>generateReads</em>, which was not
+displayed/identified by the <em>IntelliJ Profiler</em>. It is most
+likely the time needed for garbage collection by <em>JVM</em> since each
+<em>Read</em> object and its <em>readSeq</em> object are temporary
+objects which only exist once per iteration. The process of writing
+takes up the second biggest fraction in this plot, which is due to the
+high amount of information being written (around 3.4GB). Mutating the
+read sequences is unsurprisingly also quite intensive in its time usage.
+A total of <span
+class="math inline">7, 777, 500 ⋅ 2 ⋅ <em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em></span>
+positions need to be mutated (<span
+class="math inline"><em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em> = =</span>
+read length), each time generating a new random <em>double</em> and
+potentially needing to draw several bases per position (since mutations
+like ’A’ <span class="math inline">↦</span> ’A’ are not allowed).
+Because each output entry is build via <em>StringBuilders</em>, we call
+<em>StringBuilder.toString()</em> three times per read (<span
+class="math inline">3 ⋅ 7, 777, 500</span>) and each time this happens,
+new memory is allocated. A total of <span
+class="math inline">4.55<em>G</em><em>B</em></span> of allocations can
+be traced back to this cause. <span
+class="math inline">4.51<em>G</em><em>B</em></span> is needed for
+mutating the reads. The method <em>mutateRead</em> creates a new
+<em>StringBuilder</em> each time its called and converts said
+<em>StringBuilder</em> to a <em>String</em> at the end of the method.
+Additionally <em>mutateRead</em> also saves all positions mutated as a
+<em>String</em> inside an <em>ArrayList&lt;String&gt;</em> of the
+current <em>Read</em> object. Again, since we call this method <span
+class="math inline">2 ⋅ 7, 777, 500</span> times and the
+<em>StringBuilders</em> are temporary, the memory allocations accumulate
+significantly, resulting in the observed memory usage of <span
+class="math inline">4.51<em>G</em><em>B</em></span>.</p>
+<h1 id="sec:results">Results</h1>
+<p>Figure <a href="#fig:plots-fr_dist-jpg" data-reference-type="ref"
+data-reference="fig:plots-fr_dist-jpg">4</a> plots the length of all
+generated fragments against their total amount. Since a fragment can’t
+be shorter that our specified read length, we have a cutoff at a length
+of <span class="math inline">75</span>. As expected, the fragment length
+follows a normal distribution with the parameters <span
+class="math display">𝒩(<em>f</em><em>r</em><em>l</em><em>e</em><em>n</em><em>g</em><em>t</em><em>h</em>,<em>σ</em>).</span>
+The <em>standard deviation</em> <span
+class="math inline"><em>σ</em></span> is also provided by the user (see
+Section <a href="#sec:intro" data-reference-type="ref"
+data-reference="sec:intro">1</a>) and in this case, <span
+class="math inline"><em>σ</em> = 80</span>.</p>
+<figure id="fig:plots-fr_dist-jpg">
+<img src="./plots/fr_dist.jpg" style="width:50.0%" />
+<figcaption>Fragment length (<em>frlength</em>) distribution across all
+fragments.</figcaption>
+</figure>
+<figure id="fig:plots-mut_amount-jpg">
+<img src="./plots/mut_dist.jpg" />
+<img src="./plots/mut_amount.jpg" />
+<figcaption>Number of mutated bases inside read sequences.</figcaption>
+</figure>
+<p>The distribution of mutated positions inside the generated reads
+seems to be uniformly distributed (Figure <a
+href="#fig:plots-mut_dist-jpg" data-reference-type="ref"
+data-reference="fig:plots-mut_dist-jpg">[fig:plots-mut_dist-jpg]</a>).
+Each position has the same probability of mutating (in this case:<br />
+<code>-mutationrate 1.0</code> <span class="math inline"> = 1%</span>).
+Most reads have between zero and three mutated bases (Figure <a
+href="#fig:plots-mut_amount-jpg" data-reference-type="ref"
+data-reference="fig:plots-mut_amount-jpg">5</a>), only around 100,000
+have more than three mutations with one outlier having nine
+mutations.</p>
+<figure id="fig:plots-mut_bar-jpg">
+<img src="./plots/bar.jpg" style="width:90.0%" />
+<figcaption>Breakdown of total reads into split and non-split
+categories, including subsets with no mismatches or specific
+thresholds.</figcaption>
+</figure>
+<p>Figure <a href="#fig:plots-mut_bar-jpg" data-reference-type="ref"
+data-reference="fig:plots-mut_bar-jpg">6</a> shows additional read
+feature insights. 57% of the generated reads are contained within only
+one exon (<em>Non-split Reads</em>). Since, in our use case, the
+<em>frlength</em> (200) is relatively short, the fragment often spans
+only one exon wide. Calculating the mean exon length of the
+<em>GTF-File</em> used in this report also validates this
+assumption:</p>
+<pre><code>for(Gene g : genome.getGenes().values()) {
+    for (Transcript t: g.getTranscriptList()) {
+        for (Exon e: t.getExonList()) {
+            totalLength += e.getLength();
+            totalExons++;
+        }
+    }
+}
+System.out.println(totalLength / totalExons);
+&gt;&gt;&gt; 256</code></pre>
+<p>Additionally,</p>
+</body>
+</html>
