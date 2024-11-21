@@ -70,7 +70,7 @@ java -jar readSimulator.jar
 % ------------------------------------------------------------------------------
 
 \section{Java Implementation}
-\subsection{Logic}
+\subsection{Logic}\label{sec:logic}
 The logic of the \textit{Read Simulator} is split up into four main steps:
 \begin{enumerate}
 	\item[\textbf{(A)}] \textbf{Read Gene \& Transcript IDs to Simulate}:\\
@@ -258,7 +258,7 @@ The complexity of the \textit{Read Simulator} can be broken down into the parts 
 		\[
 			2 \cdot \big(2 \cdot length + 2 + |id|\big)
 		\]
-		chars. This means that
+		chars. So
 		\[
 			\mathbf{WRT}\big(2 \cdot (2 \cdot length + 2 + |id|)\big) \in \mathcal{O}(length)
 			.\]
@@ -303,16 +303,106 @@ Using the plots in section \ref{sec:results}, we can also see that the fragment 
 Conclusively, we can say that the \textit{Read Simulator} is correct.
 
 
+\newpage
 
 \subsection{Benchmarking}
-Steps \textbf{(B) - (C)} were benchmarked by executing the \textit{readSimulator JAR} 30 times using the parameters defined in section \ref{sec:intro}.
+Steps \textbf{(B) - (D)} were benchmarked by executing the \textit{readSimulator JAR} 30 times using the parameters defined in section \ref{sec:intro}.
 
 % 30 times 
 % GTF 1651ms
 % ITG 174ms
 % GR 23906ms
 
+\begin{figure}[htpb]
+    \centering
+    \includegraphics[width=0.8\textwidth]{"./plots/times.jpg"}
+    \caption{Mean \textit{JAR} performance in ms after 30 executions measured on \textit{AMD Ryzen 7 PRO 4750U with Radeon Graphics (16) @ 1.700GHz}}
+    \label{fig:-plots-times-jpg}
+\end{figure}
+
+Figure \ref{fig:-plots-times-jpg} shows us that generating the reads takes significantly longer than the other steps. This was expected, since
+the \textit{JAR} had to simulate 7,777,500 reads per run. As described in section \ref{sec:logic}, the \textit{generateReads} \textbf{(D)} method
+does several jobs at once (generating reads, mutating them and writing them). Usually one would prefer to split these tasks into several 
+smaller methods, but due to the vast amount of reads generated, it is really memory intensive to do so. Splitting up
+\textit{generateReads} would require to store all \textit{Read} objects in a data structure and lead to excessive heap usage.
+
+% generateReads            19.440
+% Writer.write             4.739
+% mutateRead               3.766
+% getGenomicRegion         2.570
+% StringBuilder.append()   2.640
+% String.join              0.920
+% NormalDistributionSample 0.430
+% unknown                  4.375 
+
+\begin{figure}[t]
+    \centering
+    \begin{minipage}[t]{0.45\textwidth} 
+        \centering
+        \includegraphics[width=\textwidth]{./plots/generateReads_times.jpg} 
+        \caption{\textit{generateReads} method\\ analyzed by CPU time using \textit{IntelliJ Profiler}}
+        \label{fig:generateReads-time}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{./plots/generateReads_ma.jpg}
+        \caption{\textit{generateReads} method\\ analyzed by memory allocations using \textit{IntelliJ Profiler}}
+        \label{fig:generateReads-ma}
+    \end{minipage}
+\end{figure}
+In Figure \ref{fig:generateReads-time} and \ref{fig:generateReads-ma} we can see method \textbf{(D)} split up 
+into its components based on \textit{CPU time} and \textit{memory allocations}.
+Note that the component \textit{unknown} in Figure \ref{fig:generateReads-time} was the fraction of \textit{generateReads}, which was not 
+displayed/identified by the \textit{IntelliJ Profiler}. It is most likely the time needed for garbage collection by \textit{JVM} since each \textit{Read} object
+and its \textit{readSeq} object are temporary objects which only exist once per iteration.
+The process of writing takes up the second biggest fraction in this plot, which is due to the 
+high amount of information being written (around 3.4GB). Mutating the read sequences is unsurprisingly also 
+quite intensive in its time usage. A total of $7,777,500 \cdot 2 \cdot length$ positions need to be mutated ($length ==$ read length), each time 
+generating a new random \textit{double} and potentially needing to draw several bases per position (since mutations like 
+'A' $\mapsto$ 'A' are not allowed). 
+Because each output entry is build via \textit{StringBuilders}, we call \textit{StringBuilder.toString()} three times per read
+($3 \cdot 7,777,500$) and each time this happens, new memory is allocated. A total of $4.55 GB$ of allocations can be traced 
+back to this cause.
+$4.51GB$ is needed for mutating the reads. The method \textit{mutateRead} creates a new \textit{StringBuilder} each time its called and converts said \textit{StringBuilder} to a \textit{String}
+at the end of the method. Additionally \textit{mutateRead} also saves all positions mutated as a \textit{String} inside an \textit{ArrayList<String>} of the 
+current \textit{Read} object. Again, since we call this method $2 \cdot 7,777,500$ times and the \textit{StringBuilders} are temporary, 
+the memory allocations accumulate significantly, resulting in the observed memory usage of $4.51GB$.
+
+\newpage
 \section{Results}\label{sec:results}
+
+
+\begin{figure}[htpb]
+    \centering
+    \includegraphics[width=0.6\textwidth]{./plots/fr_dist.jpg}
+    \caption{asjdlkas}
+    \label{fig:-plots-fr_dist-jpg}
+\end{figure}    
+
+\begin{figure}[h]
+    \centering
+    \begin{minipage}[t]{0.45\textwidth} 
+    \centering
+    \includegraphics[width=\textwidth]{./plots/mut_dist.jpg}
+    \caption{aksjd}
+    \label{fig:-plots-mut_dist-jpg}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{./plots/mut_amount.jpg}
+    \caption{aksjd}
+    \label{fig:-plots-mut_amount-jpg}
+    \end{minipage}
+\end{figure}
+
+\begin{figure}[htpb]
+    \centering
+    \includegraphics[width=0.8\textwidth]{./plots/bar.jpg}
+    \caption{aksjd}
+    \label{fig:-plots-mut_bar-jpg}
+\end{figure}
 
 
 
@@ -322,15 +412,8 @@ Steps \textbf{(B) - (C)} were benchmarked by executing the \textit{readSimulator
 
 
 % ------------------------------------------------------------------------------
-\newpage~\appendix
+% \newpage~\appendix
 % ------------------------------------------------------------------------------
-
-\section{Appendix Section}
-
-hm
-
-Text goes here
-
 
 
 \end{document}
