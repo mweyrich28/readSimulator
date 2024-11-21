@@ -44,3 +44,6 @@ output/*
 report/*
 !report/readSimulator.pdf
 !report/readSimulator.tex
+!report/simulation.pdf
+!report/simulation.tex
+!report/simulation.html
