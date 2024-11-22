@@ -420,7 +420,7 @@ than three mutations, with one outlier having nine mutations.
 \end{figure}
 
 Figure \ref{fig:plots-mut_bar-jpg} shows additional read feature insights. 
-57\% of the generated reads are contained within only one exon (\textit{Non-split Reads}).
+72\% of the generated reads are contained within only one exon (\textit{Non-split Reads}).
 Since, in our use case, the \textit{frlength} (200) is relatively short, it is a likely scenario.
 Calculating the mean exon length of the \textit{GTF-File} used in this report also validates
 this assumption:
@@ -440,6 +440,11 @@ System.out.println(totalLength / totalExons);
  
 Because there are less \textit{Split Reads} than \textit{Non-split Reads}, the number of observed
 \textit{Split (No Mismatches)} is also smaller that \textit{Non-split (No Mismatches)}.
+The category \textit{Split (No Mismatches $\ge 5$bp)} describes split reads
+where all genomic region vectors have a greater length than 5bp.
+This shows us that only 227,472 reads overextend a maximum of 4 bp into the next exon.
+
+
 
 % ------------------------------------------------------------------------------
 % \printbibliography

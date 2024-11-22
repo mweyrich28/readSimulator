@@ -5,7 +5,7 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Malte Weyrich" />
-  <meta name="dcterms.date" content="2024-11-21" />
+  <meta name="dcterms.date" content="2024-11-22" />
   <title>Genomorientierte Bioinformatik Report Read Simulator</title>
   <style>
     html {
@@ -183,7 +183,7 @@
 Report<br />
 Read Simulator</h1>
 <p class="author">Malte Weyrich</p>
-<p class="date">2024-11-21</p>
+<p class="date">2024-11-22</p>
 <div class="abstract">
 <div class="abstract-title">Abstract</div>
 <p>In bioinformatics, <em><strong>Sequencing</strong></em> is a term
@@ -703,7 +703,7 @@ thresholds.</figcaption>
 </figure>
 <p>Figure <a href="#fig:plots-mut_bar-jpg" data-reference-type="ref"
 data-reference="fig:plots-mut_bar-jpg">6</a> shows additional read
-feature insights. 57% of the generated reads are contained within only
+feature insights. 72% of the generated reads are contained within only
 one exon (<em>Non-split Reads</em>). Since, in our use case, the
 <em>frlength</em> (200) is relatively short, it is a likely scenario.
 Calculating the mean exon length of the <em>GTF-File</em> used in this
@@ -720,6 +720,10 @@ System.out.println(totalLength / totalExons);
 &gt;&gt;&gt; 256</code></pre>
 <p>Because there are less <em>Split Reads</em> than <em>Non-split
 Reads</em>, the number of observed <em>Split (No Mismatches)</em> is
-also smaller that <em>Non-split (No Mismatches)</em>.</p>
+also smaller that <em>Non-split (No Mismatches)</em>. The category
+<em>Split (No Mismatches <span class="math inline"> ≥ 5</span>bp)</em>
+describes split reads where all genomic region vectors have a greater
+length than 5bp. This shows us that only 227,472 reads overextend a
+maximum of 4 bp into the next exon.</p>
 </body>
 </html>
