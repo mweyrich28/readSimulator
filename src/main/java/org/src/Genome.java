@@ -30,6 +30,9 @@ public class Genome {
     public void initTargetGeneSeqs(HashMap<String , HashMap<String, Integer>> readCounts) throws IOException {
         for (String geneKey : readCounts.keySet()) {
             Gene gene = this.genes.get(geneKey);
+            if (gene == null) {
+                continue;
+            }
             String chr = gene.getChr();
             int start = gene.getStart();
             int end = gene.getEnd();
@@ -39,6 +42,9 @@ public class Genome {
             // for all transcripts of gene generate exons and trans seq
             for (String transcriptKey : readCounts.get(geneKey).keySet()) {
                 Transcript transcript = gene.getTranscriptMap().get(transcriptKey);
+                if (transcript == null){
+                    continue;
+                }
                 StringBuilder transcriptSeq = new StringBuilder();
 
                 for (int i = 0; i < transcript.getExonList().size(); i++) {
@@ -63,7 +69,9 @@ public class Genome {
         }
     }
 
-
+    public void printSeq(String geneId) {
+        System.out.println(this.genes.get(geneId).getSeq());
+    }
 
     public void readGTF(String pathToGtf, HashMap<String, HashMap<String, Integer>> readCounts) throws IOException {
         // sanity check vars
@@ -93,9 +101,10 @@ public class Genome {
                 int geneStart = Integer.parseInt(mainComponents[3]);
                 int geneEnd = Integer.parseInt(mainComponents[4]);
                 String geneName = FileUtils.parseGTFAttributes(attributeEntries, "gene_name");
-                String chr = mainComponents[0];
+                String chr = mainComponents[0].replace("chr", "");
+                String annot = FileUtils.parseGTFAttributes(attributeEntries, "gene_type");
                 char strand = mainComponents[6].charAt(0);
-                lastGene = new Gene(newGeneId, geneStart, geneEnd, geneName, chr, strand);
+                lastGene = new Gene(newGeneId, geneStart, geneEnd, geneName, chr, strand, annot);
                 genes.put(lastGene.getGeneId(), lastGene);
 
                 continue;

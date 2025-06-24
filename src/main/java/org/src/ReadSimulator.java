@@ -14,7 +14,7 @@ public class ReadSimulator {
 
     private static final char[] NUCLEOTIDES = {'A', 'T', 'C', 'G'};
     private static boolean debug = false;
-    private final SplittableRandom splittableRandom = new SplittableRandom();
+    private final SplittableRandom splittableRandom = new SplittableRandom(42);
     private final Genome genome;
     private final HashMap<String, HashMap<String, Integer>> readCounts = new HashMap<>();
 
@@ -25,6 +25,11 @@ public class ReadSimulator {
         this.initReadCounts(readCountsPath);
         this.genome.readGTF(gtfPath, readCounts);
         this.genome.initTargetGeneSeqs(readCounts);
+//        String[] genes = {"ENSG00000005073", "ENSG00000132703", "ENSG00000163497", "ENSG00000175646", "ENSG00000184155", "ENSG00000187173", "ENSG00000197273", "ENSG00000259680", "ENSG00000284667", "ENSG00000288644", "ENSG00000291315"};
+//        for (String gene: genes) {
+//            System.out.println(gene + "\t" + genome.getGenes().get(gene).getSeq()+ "\t" + genome.getGenes().get(gene).getStrand());
+//        }
+
         if (debug && transcriptomePath != null) {
             genome.validateTranscripts(transcriptomePath, readCounts);
         }
@@ -73,22 +78,37 @@ public class ReadSimulator {
         BufferedWriter summaryWriter = new BufferedWriter(new FileWriter(od + File.separator + "read.mappinginfo"));
         BufferedWriter fwFastqWriter = new BufferedWriter(new FileWriter(od + File.separator + "fw.fastq"));
         BufferedWriter rwFastqWriter = new BufferedWriter(new FileWriter(od + File.separator + "rw.fastq"));
-        summaryWriter.write("readid\tchr\tgene\ttranscript\tt_fw_regvec\tt_rw_regvec\tfw_regvec\trw_regvec\tfw_mut\trw_mut");
+        summaryWriter.write("readid\tchr\tgene\ttranscript\tfw_regvec\trw_regvec\tt_fw_regvec\tt_rw_regvec\tfw_mut\trw_mut\tfw_gene\trw_gene\tgene_start\tgene_length\tstrand");
 
 
         for (String geneKey : readCounts.keySet()) {
 
             Gene currGene = genome.getGenes().get(geneKey);
+            if (currGene == null) {
+                continue;
+            }
 
             for (String transcriptKey : readCounts.get(geneKey).keySet()) {
-
+//                System.out.println("Simulating " + currGene.getGeneId() + "\t" + transcriptKey + "\t" + currGene.getTranscriptMap().get(transcriptKey).getTranscriptSeq().length());
                 Transcript transcript = this.genome.getGenes().get(geneKey).getTranscriptMap().get(transcriptKey);
+                if (transcript == null) {
+                    continue;
+                }
                 String transcriptSeq = transcript.getTranscriptSeq();
+                if (transcriptSeq.length() < frlength) {
+                    System.out.println("Skipping " + transcriptKey);
+                    continue;
+                }
                 int sampleAmount = readCounts.get(geneKey).get(transcriptKey);
+
 
                 for (int i = 0; i < sampleAmount; i++) {
 
                     int fragmentLength;
+
+                    if (readId == 400368) {
+                        System.out.println();
+                    }
 
                     do {
                         fragmentLength = (int) Math.round(normalDist.sample());
@@ -137,6 +157,8 @@ public class ReadSimulator {
 
                     ArrayList<String> fwRegVec = getGenomicRegion(fwRead, transcript, currGene.getStrand());
                     ArrayList<String> rwRegVec = getGenomicRegion(rwRead, transcript, currGene.getStrand());
+                    ArrayList<String> fwRegVecLocal = getGenomicRegionLocal(fwRead, transcript, currGene.getStrand(), currGene);
+                    ArrayList<String> rwRegVecLocal = getGenomicRegionLocal(rwRead, transcript, currGene.getStrand(), currGene);
 
 
                     // concat summary col
@@ -144,12 +166,17 @@ public class ReadSimulator {
                             .append(currGene.getChr()).append("\t")
                             .append(currGene.getGeneId()).append("\t")
                             .append(transcript.getTranscriptId()).append("\t")
-                            .append(fwStart).append("-").append(fwEnd + 1).append("\t") // + 1 because 1 based
-                            .append(rwStart).append("-").append(rwEnd + 1).append("\t") // + 1 because 1 based
                             .append(String.join("|", fwRegVec)).append("\t")
                             .append(String.join("|", rwRegVec)).append("\t")
+                            .append(fwStart).append("-").append(fwEnd + 1).append("\t") // + 1 because 1 based
+                            .append(rwStart).append("-").append(rwEnd + 1).append("\t") // + 1 because 1 based
                             .append(String.join(",", fwRead.getMutPos())).append("\t")
-                            .append(String.join(",", rwRead.getMutPos()));
+                            .append(String.join(",", rwRead.getMutPos())).append("\t")
+                            .append(String.join("|", fwRegVecLocal)).append("\t")
+                            .append(String.join("|", rwRegVecLocal)).append("\t")
+                            .append(currGene.getStart()).append("\t")
+                            .append(currGene.getLength()).append("\t")
+                            .append(currGene.getStrand());
 
                     // format read seqs in fastq files
                     String quality = "I".repeat(fwSeqRead.length());
@@ -224,6 +251,67 @@ public class ReadSimulator {
                 System.out.println("DEBUG: " + readsGenerated + "/" + expectedReadsGenerated + " of reads were successfully generated.");
             }
         }
+    }
+
+    public ArrayList<String> getGenomicRegionLocal(Read read, Transcript transcript, char strand, Gene gene) {
+        ArrayList<Exon> exons = transcript.getExonList();
+        ArrayList<String> genomicRegions = new ArrayList<>();
+
+        int readStart = read.getStartInTranscript();
+        int readEnd = read.getStopInTranscript();
+
+        // tracks position in the transcript (1-based)
+        int transcriptPosition = 0;
+
+        for (Exon exon : exons) {
+            int exonStart = exon.getGenomicStart();
+            int exonEnd = exon.getGenomicEnd();
+            int exonLength = exonEnd - exonStart + 1;
+
+            // check if the read overlaps with this exon in transcript coordinates
+            if (transcriptPosition + exonLength - 1 >= readStart && transcriptPosition <= readEnd) {
+                // calculate overlap within transcript coordinates
+                int overlapStartInTranscript = Math.max(readStart, transcriptPosition);
+                int overlapEndInTranscript = Math.min(readEnd, transcriptPosition + exonLength - 1);
+
+                // map overlap to genomic coordinates based on strand
+                int overlapStartInGenomic;
+                int overlapEndInGenomic;
+
+                if (strand == '+') {
+                    // +: calculate genomic positions from exon start
+                    overlapStartInGenomic = exonStart + (overlapStartInTranscript - transcriptPosition) - gene.getStart();
+                    overlapEndInGenomic = exonStart + (overlapEndInTranscript - transcriptPosition) - gene.getStart();
+                } else {
+                    // -: calculate genomic positions from exon end (reversed order)
+                    overlapStartInGenomic = exonEnd - (overlapStartInTranscript - transcriptPosition) - gene.getStart();
+                    overlapEndInGenomic = exonEnd - (overlapEndInTranscript - transcriptPosition) - gene.getStart();
+                }
+
+                // add genomic region
+                if (overlapStartInGenomic == overlapEndInGenomic) {
+                    genomicRegions.add(overlapStartInGenomic + "-" + (overlapStartInGenomic + 1));
+                } else {
+                    if (strand == '+') {
+                        genomicRegions.add(overlapStartInGenomic + "-" + (overlapEndInGenomic + 1));
+                    } else {
+                        // reverse strand:coordinates need to be in decreasing order
+                        genomicRegions.add(overlapEndInGenomic + "-" + (overlapStartInGenomic + 1));
+                    }
+                }
+            }
+
+            // walk exon dist in transcript
+            transcriptPosition += exonLength;
+        }
+
+        if (strand == '-' && genomicRegions.size() > 1) {
+            // since exons are stored in rev order for transcript of rev strand
+            // we have to reverse our order if length > 1
+            Collections.reverse(genomicRegions);
+        }
+
+        return genomicRegions;
     }
 
     public ArrayList<String> getGenomicRegion(Read read, Transcript transcript, char strand) {
@@ -309,4 +397,5 @@ public class ReadSimulator {
         }
         read.setReadSeq(sb.toString());
     }
+
 }

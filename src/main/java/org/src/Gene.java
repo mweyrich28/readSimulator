@@ -11,6 +11,7 @@ public class Gene {
     private final HashMap<String, Transcript> transcriptMap;
     private final String geneName;
     private final String chr;
+    private String annot;
     private final char strand;
 
     private String sequence;
@@ -23,6 +24,18 @@ public class Gene {
         this.start = start;
         this.end = end;
         this.strand = strand;
+        this.transcriptList = new ArrayList<>();
+        this.transcriptMap = new HashMap<>();
+    }
+
+    public Gene(String geneId, int start, int end, String geneName, String chr, char strand, String annot) {
+        this.geneId = geneId;
+        this.geneName = geneName;
+        this.chr = chr;
+        this.start = start;
+        this.end = end;
+        this.strand = strand;
+        this.annot = annot;
         this.transcriptList = new ArrayList<>();
         this.transcriptMap = new HashMap<>();
     }
@@ -82,5 +95,12 @@ public class Gene {
     }
     public String getSeq() {
         return sequence;
+    }
+    public String getAnnot() {
+        return this.annot;
+    }
+
+    public int getLength() {
+        return this.getEnd() - this.getStart();
     }
 }
