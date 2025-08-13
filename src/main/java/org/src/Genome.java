@@ -37,6 +37,9 @@ public class Genome {
             int start = gene.getStart();
             int end = gene.getEnd();
             String seq = GSE.getSequence(chr, start, end);
+            if (seq == null) {
+                continue;
+            }
             gene.setSequence(seq);
 
             // for all transcripts of gene generate exons and trans seq
@@ -94,13 +97,22 @@ public class Genome {
 
             // get newGeneId of current line
             String newGeneId = FileUtils.parseGTFAttributes(attributeEntries, "gene_id");
+            if (newGeneId.length() != 15) {
+                // gene name contains a version at suffix
+                newGeneId= newGeneId.split("\\.")[0];
+            }
 
             // check if we hit a new gene
             if (mainComponents[2].equals("gene")) {
                 // update gene and continue with next gtf line
                 int geneStart = Integer.parseInt(mainComponents[3]);
                 int geneEnd = Integer.parseInt(mainComponents[4]);
-                String geneName = FileUtils.parseGTFAttributes(attributeEntries, "gene_name");
+//                String geneName = FileUtils.parseGTFAttributes(attributeEntries, "gene_name");
+                String geneName = FileUtils.parseGTFAttributes(attributeEntries, "gene_id");
+                if (geneName.length() != 15) {
+                    // gene name contains a version at suffix
+                    geneName = geneName.split("\\.")[0];
+                }
                 String chr = mainComponents[0].replace("chr", "");
                 String annot = FileUtils.parseGTFAttributes(attributeEntries, "gene_type");
                 char strand = mainComponents[6].charAt(0);
@@ -116,6 +128,10 @@ public class Genome {
 
                 // only add cds to current transcript
                 String transcriptId = FileUtils.parseGTFAttributes(attributeEntries, "transcript_id");
+                if (transcriptId.length() != 15) {
+                    // gene name contains a version at suffix
+                    transcriptId= transcriptId.split("\\.")[0];
+                }
 
                 // add gene to genome
                 genes.put(lastGene.getGeneId(), lastGene);

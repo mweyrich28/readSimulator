@@ -16,6 +16,7 @@ public class FileUtils {
         // save memory by selecting correct col based on tabCount
         int tabCount = 0;
         boolean seenSpace = false;
+        boolean seenDot = false;
         for (int i = 0; i < line.length(); i++) {
             if (line.charAt(i) == '\t') {
                 tabCount++;
@@ -27,7 +28,13 @@ public class FileUtils {
                 if (line.charAt(i) == ';') {
                     return readCounts.containsKey(relevantCol.toString());
                 }
-                relevantCol.append(line.charAt(i));
+                // try to doge version
+                if (line.charAt(i) == '.') {
+                    seenDot = true;
+                }
+                if (!seenDot) {
+                    relevantCol.append(line.charAt(i));
+                }
             }
         }
         return false;

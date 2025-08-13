@@ -13,6 +13,7 @@ public class Main {
     public static void main(String[] args) throws IOException {
         // add argparser
         ArgumentParser parser = ArgumentParsers.newFor("ExonSkipping").build().defaultHelp(true).description("Usage:\n\t-gtf <path-to-gtf>\n\t-out <path-to-out-tsv>");
+        System.out.println("Starting readSim");
         try {
             parser.addArgument("-gtf").required(true).help("Path to Gene Transfer Format File.");
             parser.addArgument("-od").required(true).help("Specify Output File Name.");
@@ -26,6 +27,7 @@ public class Main {
             parser.addArgument("-debug").action(storeTrue()).help("Validates Genomic Region Vectors of Reads.");
             parser.addArgument("-transcriptome").help("Optional parameter. If transcriptome is provided together with -debug flag, validates all " +
                     "extracted transcripts using the transcriptome.");
+            parser.addArgument("-dna").action(storeTrue()).help("Simulate DNA reads instead.");
 
             Namespace ns = parser.parseArgs(args);
             String gtfPath = ns.getString("gtf");
@@ -38,13 +40,15 @@ public class Main {
             String idxPath = ns.getString("fidx");
             String readCountsPath = ns.getString("readcounts");
             boolean debug = ns.get("debug");
+            boolean dna = ns.get("dna");
             String transcriptomePath= ns.get("transcriptome");
 
-            ReadSimulator r = new ReadSimulator(length , frlength , SD , mutRate , gtfPath, readCountsPath , fastaPath , idxPath , od, debug, transcriptomePath);
+            ReadSimulator r = new ReadSimulator(length , frlength , SD , mutRate , gtfPath, readCountsPath , fastaPath , idxPath , od, debug, transcriptomePath, dna);
 
         }
         // print usage entry if not all required args were provided
         catch (ArgumentParserException e) {
+            System.out.println(e);
             parser.printHelp();
         }
 
