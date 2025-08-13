@@ -8,10 +8,13 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.SplittableRandom;
 
 public class Genome {
     private final HashMap<String, Gene> genes;
     private GenomeSequenceExtractor GSE;
+    private final SplittableRandom splittableRandom = new SplittableRandom(42);
+    private static final char[] NUCLEOTIDES = {'A', 'T', 'C', 'G'};
 
     public Genome() {
         this.genes = new HashMap<>();
@@ -27,7 +30,7 @@ public class Genome {
         return genes;
     }
 
-    public void initTargetGeneSeqs(HashMap<String , HashMap<String, Integer>> readCounts) throws IOException {
+    public void initTargetGeneSeqs(HashMap<String , HashMap<String, Integer>> readCounts, double mutRate) throws IOException {
         for (String geneKey : readCounts.keySet()) {
             Gene gene = this.genes.get(geneKey);
             if (gene == null) {
@@ -40,7 +43,11 @@ public class Genome {
             if (seq == null) {
                 continue;
             }
+
             gene.setSequence(seq);
+            if (mutRate != 0.0) {
+                simulateMutations(gene, mutRate);
+            }
 
             // for all transcripts of gene generate exons and trans seq
             for (String transcriptKey : readCounts.get(geneKey).keySet()) {
@@ -206,5 +213,28 @@ public class Genome {
 
     public GenomeSequenceExtractor getGSE() {
         return GSE;
+    }
+
+    public void simulateMutations(Gene gene, double mutRate) {
+        String seq = gene.getSeq();
+        StringBuilder sb = new StringBuilder(seq);
+        int seqLength = seq.length();
+
+        // convert to prob
+        double mutProb = mutRate / 100;
+
+        // Check each position for mutation based on probability
+        for (int i = 0; i < seqLength; i++) {
+            if (splittableRandom.nextDouble() < mutProb) {
+                char originalNucleotide = seq.charAt(i);
+                char newNucleotide;
+                do {
+                    newNucleotide = NUCLEOTIDES[splittableRandom.nextInt(NUCLEOTIDES.length)];
+                } while (newNucleotide == originalNucleotide);
+                sb.setCharAt(i, newNucleotide);
+                gene.addMutation(i);
+            }
+        }
+        gene.setSequence(sb.toString());
     }
 }

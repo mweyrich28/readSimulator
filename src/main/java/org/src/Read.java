@@ -9,7 +9,7 @@ public class Read {
     private int startInTranscript;
     private int stopInTranscript;
     private int length;
-    private ArrayList<String> mutPos = new ArrayList<>();
+    private ArrayList<String> sequenceErrors= new ArrayList<>();
 
     public Read(String seq, int start, int end, int id, boolean isRw) {
         this.isRw = isRw;
@@ -28,12 +28,12 @@ public class Read {
         this.readSeq = readSeq;
     }
 
-    public void addMutPos(int pos) {
-        this.mutPos.add(Integer.toString(pos));
+    public void addSequenceError(int pos) {
+        this.sequenceErrors.add(Integer.toString(pos));
     }
 
-    public ArrayList<String> getMutPos() {
-        return mutPos;
+    public ArrayList<String> getSequenceErrors() {
+        return sequenceErrors;
     }
 
     public int getStartInTranscript() {
@@ -51,4 +51,5 @@ public class Read {
     public boolean isRw() {
         return isRw;
     }
+
 }

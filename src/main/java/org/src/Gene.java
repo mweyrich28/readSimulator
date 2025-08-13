@@ -15,6 +15,7 @@ public class Gene {
     private final char strand;
 
     private String sequence;
+    private ArrayList<String> mutations = new ArrayList<>();
 
 
     public Gene(String geneId, int start, int end, String geneName, String chr, char strand) {
@@ -42,6 +43,14 @@ public class Gene {
 
     public String getGeneId() {
         return geneId;
+    }
+
+    public void addMutation(int pos) {
+        this.mutations.add(Integer.toString(pos));
+    }
+
+    public ArrayList<String> getMutations() {
+        return mutations;
     }
 
     public void invertTranscripts() {

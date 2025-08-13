@@ -20,7 +20,8 @@ public class Main {
             parser.addArgument("-length").required(true).help("Specify Read Length.").type(Integer.class);;
             parser.addArgument("-frlength").required(true).help("Specify Mean Fragment Length.").type(Integer.class);;
             parser.addArgument("-SD").required(true).help("Specify Standard Error for Fragment Length.").type(Integer.class);;
-            parser.addArgument("-mutationrate").required(true).help("Specify Mutationrate for Reads. 1.0 corresponds to 1%.").type(Double.class);;
+            parser.addArgument("-mutationrate").required(true).help("Specify Mutationrate for Gene. 1.0 corresponds to 1%.").type(Double.class);;
+            parser.addArgument("-seqerrrate").required(true).help("Specify Sequence Error Rate for Reads. 1.0 corresponds to 1%.").type(Double.class);;
             parser.addArgument("-fasta").required(true).help("Path to Fasta.");
             parser.addArgument("-fidx").required(true).help("Path to Fasta Index. This should correspond to your provided Fasta.");
             parser.addArgument("-readcounts").required(true).help("A TSV containing Entries of Transcripts to be simulated x Amount.");
@@ -36,6 +37,7 @@ public class Main {
             int frlength = ns.getInt("frlength");
             int SD = ns.getInt("SD");
             double mutRate = ns.getDouble("mutationrate");
+            double seqErrRate = ns.getDouble("mutationrate");
             String fastaPath = ns.getString("fasta");
             String idxPath = ns.getString("fidx");
             String readCountsPath = ns.getString("readcounts");
@@ -43,7 +45,7 @@ public class Main {
             boolean dna = ns.get("dna");
             String transcriptomePath= ns.get("transcriptome");
 
-            ReadSimulator r = new ReadSimulator(length , frlength , SD , mutRate , gtfPath, readCountsPath , fastaPath , idxPath , od, debug, transcriptomePath, dna);
+            ReadSimulator r = new ReadSimulator(length , frlength , SD , mutRate , gtfPath, readCountsPath , fastaPath , idxPath , od, debug, transcriptomePath, dna, seqErrRate);
 
         }
         // print usage entry if not all required args were provided

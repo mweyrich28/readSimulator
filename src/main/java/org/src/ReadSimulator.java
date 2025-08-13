@@ -19,14 +19,14 @@ public class ReadSimulator {
     private final HashMap<String, HashMap<String, Integer>> readCounts = new HashMap<>();
     private boolean dna;
 
-    public ReadSimulator(int length, int frlength, int SD, double mutRate, String gtfPath, String readCountsPath, String fastaPath, String idxPath, String od, boolean debug, String transcriptomePath, boolean dna) throws IOException {
+    public ReadSimulator(int length, int frlength, int SD, double mutRate, String gtfPath, String readCountsPath, String fastaPath, String idxPath, String od, boolean debug, String transcriptomePath, boolean dna, double seqerrrate) throws IOException {
         ReadSimulator.debug = debug;
 
         this.genome = new Genome(idxPath, fastaPath);
         this.dna = dna;
         this.initReadCounts(readCountsPath);
         this.genome.readGTF(gtfPath, readCounts);
-        this.genome.initTargetGeneSeqs(readCounts);
+        this.genome.initTargetGeneSeqs(readCounts, mutRate);
 //        String[] genes = {"ENSG00000005073", "ENSG00000132703", "ENSG00000163497", "ENSG00000175646", "ENSG00000184155", "ENSG00000187173", "ENSG00000197273", "ENSG00000259680", "ENSG00000284667", "ENSG00000288644", "ENSG00000291315"};
 //        for (String gene: genes) {
 //            System.out.println(gene + "\t" + genome.getGenes().get(gene).getSeq()+ "\t" + genome.getGenes().get(gene).getStrand());
@@ -35,7 +35,7 @@ public class ReadSimulator {
         if (debug && transcriptomePath != null) {
             genome.validateTranscripts(transcriptomePath, readCounts);
         }
-        this.generateReads(length, frlength, SD, mutRate, od);
+        this.generateReads(length, frlength, SD, seqerrrate, od);
     }
 
     public void initReadCounts(String readCountsPath) throws IOException {
@@ -58,7 +58,7 @@ public class ReadSimulator {
         }
     }
 
-    public void generateReads(int length, int frlength, int SD, double mutRate, String od) throws IOException {
+    public void generateReads(int length, int frlength, int SD, double seqmutrate, String od) throws IOException {
 
         // create od if not existent
         File outputDir = new File(od);
@@ -80,34 +80,36 @@ public class ReadSimulator {
         BufferedWriter summaryWriter = new BufferedWriter(new FileWriter(od + File.separator + "read.mappinginfo"));
         BufferedWriter fwFastqWriter = new BufferedWriter(new FileWriter(od + File.separator + "fw.fastq"));
         BufferedWriter rwFastqWriter = new BufferedWriter(new FileWriter(od + File.separator + "rw.fastq"));
-        summaryWriter.write("readid\tchr\tgene\ttranscript\tfw_regvec\trw_regvec\tt_fw_regvec\tt_rw_regvec\tfw_mut\trw_mut\tfw_gene\trw_gene\tgene_start\tgene_length\tstrand");
+        summaryWriter.write("readid\tchr\tgene\ttranscript\tfw_regvec\trw_regvec\tt_fw_regvec\tt_rw_regvec\tfw_seq_err\trw_seq_err\tfw_gene\trw_gene\tgene_start\tgene_length\tstrand\tfw_mut\trw_mut\tfw_mut_combined\trw_mut_combined");
 
 
         for (String geneKey : readCounts.keySet()) {
 
             Gene currGene = genome.getGenes().get(geneKey);
             if (currGene == null) {
+                System.out.println("Skipping currGene: " + geneKey+ " because gene is null");
                 continue;
             }
 
             for (String transcriptKey : readCounts.get(geneKey).keySet()) {
-//                System.out.println("Simulating " + currGene.getGeneId() + "\t" + transcriptKey + "\t" + currGene.getTranscriptMap().get(transcriptKey).getTranscriptSeq().length());
                 Transcript transcript = this.genome.getGenes().get(geneKey).getTranscriptMap().get(transcriptKey);
                 if (transcript == null) {
+                    System.out.println("Skipping transcript " + transcriptKey + " because transcript is null");
                     continue;
                 }
                 String transcriptSeq = transcript.getTranscriptSeq();
                 if (transcriptSeq == null) {
-                    System.out.println("Skipping " + transcriptKey);
+                    System.out.println("Skipping transcript " + transcriptKey + " because seq is null");
                     continue;
                 }
                 if (transcriptSeq.length() < frlength) {
-                    System.out.println("Skipping " + transcriptKey);
+                    System.out.println("Skipping transcript " + transcriptKey + " because len < frlen: tLen: " + transcriptSeq.length() + " frLen: "+ frlength);
                     continue;
                 }
                 int sampleAmount = readCounts.get(geneKey).get(transcriptKey);
 
 
+                // simulate rna reads
                 if (!this.dna) {
                     for (int i = 0; i < sampleAmount; i++) {
 
@@ -133,35 +135,24 @@ public class ReadSimulator {
                         Read fwRead = new Read(fwSeqRead, fwStart, fwEnd, readId, false);
                         Read rwRead = new Read(rwSeqRead, rwStart, rwEnd, readId, true);
 
-                        if (debug) {
-                            ArrayList<String> reg = getGenomicRegion(fwRead, transcript, currGene.getStrand());
-                            boolean correctFw = fwRead.getReadSeq().equals(this.genome.getGSE().extractRegion(reg, currGene.getChr(), currGene.getStrand(), false));
-
-                            reg = getGenomicRegion(rwRead, transcript, currGene.getStrand());
-                            boolean correctRw = rwRead.getReadSeq().equals(this.genome.getGSE().extractRegion(reg, currGene.getChr(), currGene.getStrand(), true));
-
-                            if (!(correctRw && correctFw)) {
-                                System.out.println("DEBUG:");
-                                reg = getGenomicRegion(fwRead, transcript, currGene.getStrand());
-                                System.out.println("FWR " + reg);
-                                System.out.println("FWS " + fwSeqRead);
-                                System.out.println("EXT " + this.genome.getGSE().extractRegion(reg, currGene.getChr(), currGene.getStrand(), false));
-
-                                reg = getGenomicRegion(rwRead, transcript, currGene.getStrand());
-                                System.out.println("RWR " + reg);
-                                System.out.println("RWS " + rwSeqRead);
-                                System.out.println("EXT " + this.genome.getGSE().extractRegion(reg, currGene.getChr(), currGene.getStrand(), true));
-                                throw new RuntimeException("Read " + readId + " does not match with its GenomicReadVector.");
-                            }
+                        if (seqmutrate != 0.0) {
+                            simulateSequenceErrors(fwRead, seqmutrate);
+                            simulateSequenceErrors(rwRead, seqmutrate);
                         }
 
-                        mutateRead(fwRead, mutRate);
-                        mutateRead(rwRead, mutRate);
 
                         ArrayList<String> fwRegVec = getGenomicRegion(fwRead, transcript, currGene.getStrand());
                         ArrayList<String> rwRegVec = getGenomicRegion(rwRead, transcript, currGene.getStrand());
                         ArrayList<String> fwRegVecLocal = getGenomicRegionLocal(fwRead, transcript, currGene.getStrand(), currGene);
                         ArrayList<String> rwRegVecLocal = getGenomicRegionLocal(rwRead, transcript, currGene.getStrand(), currGene);
+
+                        ArrayList<String> fwMutations = extractGeneMutations(fwRegVecLocal, currGene );
+                        ArrayList<String> rvMutations = extractGeneMutations(rwRegVecLocal, currGene );
+
+                        ArrayList<String> fwMutationsCombined = combineMutPos(fwRead.getSequenceErrors(), fwMutations);
+                        ArrayList<String> rvMutationsCombined = combineMutPos(rwRead.getSequenceErrors(), rvMutations);
+
+
 
 
                         // concat summary col
@@ -173,13 +164,17 @@ public class ReadSimulator {
                                 .append(String.join("|", rwRegVec)).append("\t")
                                 .append(fwStart).append("-").append(fwEnd + 1).append("\t") // + 1 because 1 based
                                 .append(rwStart).append("-").append(rwEnd + 1).append("\t") // + 1 because 1 based
-                                .append(String.join(",", fwRead.getMutPos())).append("\t")
-                                .append(String.join(",", rwRead.getMutPos())).append("\t")
+                                .append(String.join(",", fwRead.getSequenceErrors())).append("\t")
+                                .append(String.join(",", rwRead.getSequenceErrors())).append("\t")
                                 .append(String.join("|", fwRegVecLocal)).append("\t")
                                 .append(String.join("|", rwRegVecLocal)).append("\t")
                                 .append(currGene.getStart()).append("\t")
                                 .append(currGene.getLength()).append("\t")
-                                .append(currGene.getStrand());
+                                .append(currGene.getStrand()).append("\t")
+                                .append(String.join(",", fwMutations)).append("\t")
+                                .append(String.join(",", rvMutations)).append("\t")
+                                .append(String.join(",", fwMutationsCombined)).append("\t")
+                                .append(String.join(",", rvMutationsCombined));
 
                         // format read seqs in fastq files
                         String quality = "I".repeat(fwSeqRead.length());
@@ -204,10 +199,6 @@ public class ReadSimulator {
                                     .append(quality);
 
                         }
-                        if (debug) {
-                            readsGenerated += 2;
-                        }
-
                         readId++;
 
                         summaryWriter.write(summaryBuilder.toString());
@@ -219,7 +210,6 @@ public class ReadSimulator {
                         fwFastqBuilder.setLength(0);
                         rwFastqBuilder.setLength(0);
                     }
-
                 } else {
                     for (int i = 0; i < sampleAmount; i++) {
 
@@ -259,17 +249,19 @@ public class ReadSimulator {
                         Read fwRead = new Read(fwSeqRead, fwStart, fwEnd, readId, false);
                         Read rwRead = new Read(rwSeqRead, rwStart, rwEnd, readId, true);
 
-                        mutateRead(fwRead, mutRate);
-                        mutateRead(rwRead, mutRate);
+                        if (seqmutrate != 0.0) {
+                            simulateSequenceErrors(fwRead, seqmutrate);
+                            simulateSequenceErrors(rwRead, seqmutrate);
+                        }
 
                         ArrayList<String> fwRegVec = new ArrayList<>();
                         ArrayList<String> rwRegVec = new ArrayList<>();
                         ArrayList<String> fwRegVecLocal = new ArrayList<>();
                         ArrayList<String> rwRegVecLocal = new ArrayList<>();
-                        fwRegVec.add((fwStart+ currGene.getStart()) +"-"+(fwEnd + currGene.getStart()+1));
-                        fwRegVecLocal.add((fwStart+ currGene.getStart()) +"-"+(fwEnd+ currGene.getStart()+1));
-                        rwRegVec.add((rwStart+ currGene.getStart()) +"-"+(rwEnd+ currGene.getStart()+1));
-                        rwRegVecLocal.add((rwStart+ currGene.getStart()) +"-"+(rwEnd+ currGene.getStart()+1));
+                        fwRegVec.add((fwStart + currGene.getStart()) + "-" + (fwEnd + currGene.getStart() + 1));
+                        fwRegVecLocal.add((fwStart + currGene.getStart()) + "-" + (fwEnd + currGene.getStart() + 1));
+                        rwRegVec.add((rwStart + currGene.getStart()) + "-" + (rwEnd + currGene.getStart() + 1));
+                        rwRegVecLocal.add((rwStart + currGene.getStart()) + "-" + (rwEnd + currGene.getStart() + 1));
 
 
                         // concat summary col
@@ -281,8 +273,8 @@ public class ReadSimulator {
                                 .append(String.join("|", rwRegVec)).append("\t")
                                 .append(fwStart).append("-").append(fwEnd + 1).append("\t") // + 1 because 1 based
                                 .append(rwStart).append("-").append(rwEnd + 1).append("\t") // + 1 because 1 based
-                                .append(String.join(",", fwRead.getMutPos())).append("\t")
-                                .append(String.join(",", rwRead.getMutPos())).append("\t")
+                                .append(String.join(",", fwRead.getSequenceErrors())).append("\t")
+                                .append(String.join(",", rwRead.getSequenceErrors())).append("\t")
                                 .append(String.join("|", fwRegVecLocal)).append("\t")
                                 .append(String.join("|", rwRegVecLocal)).append("\t")
                                 .append(currGene.getStart()).append("\t")
@@ -488,7 +480,7 @@ public class ReadSimulator {
         return genomicRegions;
     }
 
-    public void mutateRead(Read read, double mutRate) {
+    public void simulateSequenceErrors(Read read, double mutRate) {
         String seq = read.getReadSeq();
         StringBuilder sb = new StringBuilder(seq);
         int seqLength = seq.length();
@@ -505,10 +497,67 @@ public class ReadSimulator {
                     newNucleotide = NUCLEOTIDES[splittableRandom.nextInt(NUCLEOTIDES.length)];
                 } while (newNucleotide == originalNucleotide);
                 sb.setCharAt(i, newNucleotide);
-                read.addMutPos(i);
+                read.addSequenceError(i);
             }
         }
         read.setReadSeq(sb.toString());
+    }
+
+    public ArrayList<String> extractGeneMutations(ArrayList<String> rv, Gene gene ) {
+        ArrayList<String> readMutations = new ArrayList<>();
+
+        ArrayList<String> geneMuts = gene.getMutations();
+
+        for (String region : rv) {
+            String[] segments = region.split("\\|");
+
+            for (String seg : segments) {
+                String[] bounds = seg.split("-");
+                if (bounds.length != 2) continue;
+
+                int start = Integer.parseInt(bounds[0]);
+                int stop = Integer.parseInt(bounds[1]);
+
+                for (String mutStr : geneMuts) {
+                    int mutPos = Integer.parseInt(mutStr);
+
+                    if (mutPos >= start && mutPos <= stop) {
+                        int readCoord;
+                        readCoord = (mutPos - start);
+
+                        // Keep only positions within 0–150 range
+                        if (readCoord >= 0 && readCoord <= 150) {
+                            readMutations.add(String.valueOf(readCoord));
+                        }
+                    }
+                }
+            }
+        }
+
+
+        TreeSet<String> sortedSet = new TreeSet<>(Comparator.comparing(Integer::parseInt));
+        sortedSet.addAll(readMutations);
+        readMutations = new ArrayList<>(sortedSet);
+        return readMutations;
+    }
+
+    public ArrayList<String> combineMutPos(ArrayList<String> seqErr, ArrayList<String> mut) {
+        Set<Integer> set = new HashSet<>();
+
+        for (String s : seqErr) {
+            set.add(Integer.parseInt(s));
+        }
+
+        for (String s : mut) {
+            set.add(Integer.parseInt(s));
+        }
+
+        ArrayList<String> combined = new ArrayList<>();
+        set.stream()
+                .sorted()
+                .forEach(num -> combined.add(String.valueOf(num)));
+
+        return combined;
     }
 
 }
