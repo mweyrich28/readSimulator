@@ -87,7 +87,7 @@ public class ReadSimulator {
 
             Gene currGene = genome.getGenes().get(geneKey);
             if (currGene == null) {
-                System.out.println("Skipping currGene: " + geneKey+ " because gene is null");
+                System.out.println("Skipping currGene: " + geneKey + " because gene is null");
                 continue;
             }
 
@@ -103,7 +103,7 @@ public class ReadSimulator {
                     continue;
                 }
                 if (transcriptSeq.length() < frlength) {
-                    System.out.println("Skipping transcript " + transcriptKey + " because len < frlen: tLen: " + transcriptSeq.length() + " frLen: "+ frlength);
+                    System.out.println("Skipping transcript " + transcriptKey + " because len < frlen: tLen: " + transcriptSeq.length() + " frLen: " + frlength);
                     continue;
                 }
                 int sampleAmount = readCounts.get(geneKey).get(transcriptKey);
@@ -140,19 +140,16 @@ public class ReadSimulator {
                             simulateSequenceErrors(rwRead, seqmutrate);
                         }
 
-
                         ArrayList<String> fwRegVec = getGenomicRegion(fwRead, transcript, currGene.getStrand());
                         ArrayList<String> rwRegVec = getGenomicRegion(rwRead, transcript, currGene.getStrand());
                         ArrayList<String> fwRegVecLocal = getGenomicRegionLocal(fwRead, transcript, currGene.getStrand(), currGene);
                         ArrayList<String> rwRegVecLocal = getGenomicRegionLocal(rwRead, transcript, currGene.getStrand(), currGene);
 
-                        ArrayList<String> fwMutations = extractGeneMutations(fwRegVecLocal, currGene );
-                        ArrayList<String> rvMutations = extractGeneMutations(rwRegVecLocal, currGene );
+                        ArrayList<String> fwMutations = extractGeneMutations(fwRegVecLocal, currGene, fwRead.isRw());
+                        ArrayList<String> rvMutations = extractGeneMutations(rwRegVecLocal, currGene, rwRead.isRw());
 
                         ArrayList<String> fwMutationsCombined = combineMutPos(fwRead.getSequenceErrors(), fwMutations);
                         ArrayList<String> rvMutationsCombined = combineMutPos(rwRead.getSequenceErrors(), rvMutations);
-
-
 
 
                         // concat summary col
@@ -503,10 +500,10 @@ public class ReadSimulator {
         read.setReadSeq(sb.toString());
     }
 
-    public ArrayList<String> extractGeneMutations(ArrayList<String> rv, Gene gene ) {
+    public ArrayList<String> _extractGeneMutations(ArrayList<String> rv, Gene gene, boolean isRevRead, int readLength) {
         ArrayList<String> readMutations = new ArrayList<>();
 
-        ArrayList<String> geneMuts = gene.getMutations();
+        ArrayList<Integer> geneMuts = gene.getMutations();
 
         for (String region : rv) {
             String[] segments = region.split("\\|");
@@ -517,13 +514,15 @@ public class ReadSimulator {
 
                 int start = Integer.parseInt(bounds[0]);
                 int stop = Integer.parseInt(bounds[1]);
+                int readLen = stop - start;
 
-                for (String mutStr : geneMuts) {
-                    int mutPos = Integer.parseInt(mutStr);
-
+                for (Integer mutPos : geneMuts) {
                     if (mutPos >= start && mutPos <= stop) {
                         int readCoord;
                         readCoord = (mutPos - start);
+                        if (isRevRead) {
+                            readCoord = readLen - readCoord - 1;
+                        }
 
                         // Keep only positions within 0–150 range
                         if (readCoord >= 0 && readCoord <= 150) {
@@ -533,7 +532,6 @@ public class ReadSimulator {
                 }
             }
         }
-
 
         TreeSet<String> sortedSet = new TreeSet<>(Comparator.comparing(Integer::parseInt));
         sortedSet.addAll(readMutations);
@@ -560,4 +558,52 @@ public class ReadSimulator {
         return combined;
     }
 
+    public ArrayList<String> extractGeneMutations(ArrayList<String> rv, Gene gene, boolean isRevRead) {
+        ArrayList<String> readMutations = new ArrayList<>();
+        ArrayList<Integer> geneMuts = gene.getMutations();
+
+        ArrayList<int[]> regions = new ArrayList<>();
+        for (String region : rv) {
+            String[] segments = region.split("\\|");
+            for (String seg : segments) {
+                String[] bounds = seg.split("-");
+                if (bounds.length == 2) {
+                    int start = Integer.parseInt(bounds[0].trim());
+                    int stop = Integer.parseInt(bounds[1].trim());
+                    regions.add(new int[]{start, stop});
+                }
+            }
+        }
+
+        regions.sort((a, b) -> Integer.compare(Math.min(a[0], a[1]), Math.min(b[0], b[1])));
+
+        int cumuLength = 0;
+        for (int[] region : regions) {
+            for (int mutPos : geneMuts) {
+                if (region[0] <= mutPos && region[1] >= mutPos) {
+                    int relativePos = mutPos - region[0] + cumuLength;
+                    readMutations.add(Integer.toString(relativePos));
+                } else if (mutPos > region[1]) {
+                    break;
+                }
+            }
+            cumuLength += region[1] - region[0];
+        }
+
+        if (isRevRead) {
+            ArrayList<String> readMutationsRv = new ArrayList<>();
+            for (String readMutPos : readMutations) {
+                int readMutPosInt = Integer.parseInt(readMutPos);
+                int rvReadMutPosInt = cumuLength-readMutPosInt+1;
+                readMutationsRv.add(Integer.toString(rvReadMutPosInt));
+            }
+            readMutations = readMutationsRv;
+        }
+
+
+        TreeSet<String> sortedSet = new TreeSet<>(Comparator.comparing(Integer::parseInt));
+        sortedSet.addAll(readMutations);
+        return new ArrayList<>(sortedSet);
+    }
 }
+

@@ -15,7 +15,7 @@ public class Gene {
     private final char strand;
 
     private String sequence;
-    private ArrayList<String> mutations = new ArrayList<>();
+    private ArrayList<Integer> mutations = new ArrayList<>();
 
 
     public Gene(String geneId, int start, int end, String geneName, String chr, char strand) {
@@ -46,10 +46,10 @@ public class Gene {
     }
 
     public void addMutation(int pos) {
-        this.mutations.add(Integer.toString(pos));
+        this.mutations.add(pos);
     }
 
-    public ArrayList<String> getMutations() {
+    public ArrayList<Integer> getMutations() {
         return mutations;
     }
 

@@ -47,6 +47,9 @@ public class Genome {
             gene.setSequence(seq);
             if (mutRate != 0.0) {
                 simulateMutations(gene, mutRate);
+                if (gene.getGeneId().equals("ENSG00000240972")) {
+                    System.out.println(gene.getMutations());
+                }
             }
 
             // for all transcripts of gene generate exons and trans seq

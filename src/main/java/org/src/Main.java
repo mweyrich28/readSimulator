@@ -37,7 +37,7 @@ public class Main {
             int frlength = ns.getInt("frlength");
             int SD = ns.getInt("SD");
             double mutRate = ns.getDouble("mutationrate");
-            double seqErrRate = ns.getDouble("mutationrate");
+            double seqErrRate = ns.getDouble("seqerrrate");
             String fastaPath = ns.getString("fasta");
             String idxPath = ns.getString("fidx");
             String readCountsPath = ns.getString("readcounts");
