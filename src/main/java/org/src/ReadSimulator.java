@@ -594,7 +594,17 @@ public class ReadSimulator {
             ArrayList<String> readMutationsRv = new ArrayList<>();
             for (String readMutPos : readMutations) {
                 int readMutPosInt = Integer.parseInt(readMutPos);
-                int rvReadMutPosInt = cumuLength-readMutPosInt+1;
+                int rvReadMutPosInt = cumuLength-readMutPosInt-1;
+                readMutationsRv.add(Integer.toString(rvReadMutPosInt));
+            }
+            readMutations = readMutationsRv;
+        }
+
+        if (gene.getStrand() == '-' ) {
+            ArrayList<String> readMutationsRv = new ArrayList<>();
+            for (String readMutPos : readMutations) {
+                int readMutPosInt = Integer.parseInt(readMutPos);
+                int rvReadMutPosInt = cumuLength-readMutPosInt-1;
                 readMutationsRv.add(Integer.toString(rvReadMutPosInt));
             }
             readMutations = readMutationsRv;

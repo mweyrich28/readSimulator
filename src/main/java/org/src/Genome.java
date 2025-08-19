@@ -7,6 +7,8 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.SplittableRandom;
 
@@ -47,8 +49,16 @@ public class Genome {
             gene.setSequence(seq);
             if (mutRate != 0.0) {
                 simulateMutations(gene, mutRate);
-                if (gene.getGeneId().equals("ENSG00000240972")) {
-                    System.out.println(gene.getMutations());
+                if (gene.getStrand() == '-') {
+                    if (gene.getGeneId().equals("ENSG00000168785")) {
+                        System.out.println(gene.getMutations());
+                    }
+//                    gene.reverseMutations();
+
+                    if (gene.getGeneId().equals("ENSG00000168785")) {
+                        System.out.println(gene.getMutations());
+                    }
+
                 }
             }
 

@@ -1,6 +1,7 @@
 package org.src;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 public class Gene {
@@ -61,6 +62,19 @@ public class Gene {
                 currTranscript.getExonList().get(j).setPos(j);
             }
         }
+    }
+
+    public void setMutations(ArrayList<Integer> mutations) {
+        this.mutations = mutations;
+    }
+    public void reverseMutations() {
+        ArrayList<Integer> rvMutations = new ArrayList<>();
+        for (int mut : this.mutations) {
+            int rvMut = this.getLength() - mut;
+            rvMutations.add(rvMut);
+        }
+        Collections.reverse(rvMutations);
+        this.setMutations(rvMutations);
     }
 
     public void addTranscript(Transcript transcript){
